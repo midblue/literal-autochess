@@ -1,7 +1,7 @@
 <template>
   <div class="shopholder" v-if="buyablePieces.length">
     <div class="shop">
-      <div>Shop!</div>
+      <div class="sectionlabel">Shop</div>
       <div
         v-for="piece, index in buyablePieces"
         :key="piece + index"
@@ -25,6 +25,7 @@
 <script>
 import Piece from '~/components/Piece'
 import prices from '~/assets/pieceManagement/prices'
+import pool from '~/assets/pieceManagement/buyPool'
 
 export default {
   components: { Piece },
@@ -41,8 +42,8 @@ export default {
   },
   computed: {},
   watch: {
-    gameData() {
-      this.resetItems()
+    gameData(newData) {
+      if (newData) this.resetItems()
     },
   },
   mounted() {
@@ -50,31 +51,8 @@ export default {
   },
   methods: {
     resetItems() {
-      const pool = [
-        'pawn',
-        'pawn',
-        'pawn',
-        'pawn',
-        'pawn',
-        'pawn',
-        'pawn',
-        'pawn',
-        'pawn',
-        'pawn',
-        'bishop',
-        'bishop',
-        'bishop',
-        'knight',
-        'knight',
-        'knight',
-        'rook',
-        'rook',
-        'rook',
-        'queen',
-        'king',
-      ]
       this.buyablePieces = []
-      for (let i = 0; i < 3; i++) {
+      for (let i = 0; i < 4; i++) {
         this.buyablePieces = [
           ...this.buyablePieces,
           pool[Math.floor(Math.random() * pool.length)],
@@ -89,7 +67,6 @@ export default {
           this.buyablePieces.findIndex(p => p === item),
           1
         )
-        // todo find empty space to place it
         this.player.addPiece({ type: item, x: 3, y: 4, bench: true })
       } else {
         this.$emit('notify', 'Not enough money!')

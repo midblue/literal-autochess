@@ -1,9 +1,9 @@
 <template>
-  <div class="stats" v-if="unitKillList.length">
+  <div class="stats">
     <transition-group name="grid">
       <div class="listing" v-for="piece in unitKillList" :key="piece.id">
         <Piece class="piece" v-bind="piece" />
-        <span>{{piece.kills}} kill{{piece.kills === 1 ? '' : 's'}}</span>
+        <div>{{piece.kills}} kill{{piece.kills === 1 ? '' : 's'}}</div>
       </div>
     </transition-group>
   </div>
@@ -82,7 +82,14 @@ export default {
   transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   z-index: 2;
 }
+
+.grid-enter-active,
 .grid-leave-active {
-  display: none;
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.grid-enter,
+.grid-leave-to {
+  opacity: 0;
+  transform: translateY(10px);
 }
 </style>

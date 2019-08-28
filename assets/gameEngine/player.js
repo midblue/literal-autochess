@@ -5,10 +5,11 @@ export default function({
   pieces = [{ type: 'king', color: 'black', x: 3, y: 7 }],
   bench = [],
   hp = 5,
-  gold = 0,
+  gold = 2,
   isHuman = false,
   level = 1,
   color = 'white',
+  dimensions = { x: 8, y: 8 },
 }) {
   return {
     color,
@@ -16,6 +17,7 @@ export default function({
     level,
     hp,
     gold,
+    dimensions,
     previousWinnings: {},
     pieces: generatePieces(pieces),
     bench: generatePieces(bench),
@@ -60,11 +62,28 @@ export default function({
           context: { id, x, y },
         }
 
-      if (y < 4) return { error: true, msg: `Can't move a piece that far up!` }
+      if (y < this.dimensions.y / 2)
+        return {
+          error: true,
+          notify: true,
+          msg: `Can't move a piece that far up!`,
+        }
 
       let pieceAtThatLocation = this.pieces.find(
         p => p.id !== id && (p.homeX === x && p.homeY === y)
       )
+      if (
+        pieceAtThatLocation &&
+        pieceAtThatLocation.type === 'king' &&
+        !this.pieces.find(
+          p => p.id !== pieceAtThatLocation.id && p.type === 'king'
+        )
+      )
+        return {
+          error: true,
+          notify: true,
+          msg: `Must have at least one king in play!`,
+        }
       if (pieceAtThatLocation) {
         // switch!
         this.toggleBench(pieceAtThatLocation)
@@ -88,7 +107,7 @@ export default function({
       if (!pieceToUpdate)
         return {
           error: true,
-          msg: "Can't find piece to send to bench: ",
+          msg: "Can't find piece to send to bench.",
           context: id,
         }
       if (
@@ -97,13 +116,14 @@ export default function({
       )
         return {
           error: true,
+          notify: true,
           msg: 'Must have at least one king in play.',
           context: id,
         }
       this.toggleBench(pieceToUpdate)
       return true
     },
-    updatePiece(updatedProps, boardHeight = 8) {
+    updatePiece(updatedProps) {
       const pieceToUpdate = this.pieces.find(p => {
         return p.id === updatedProps.id
       })
@@ -116,9 +136,14 @@ export default function({
 
       if (
         updatedProps.homeY &&
-        updatedProps.homeY < Math.floor(boardHeight / 2)
+        updatedProps.homeY < Math.floor(this.dimensions.y / 2)
       )
-        return { error: true, msg: `Can't move a piece that far up!` }
+        return {
+          error: true,
+          msg: `Can't move a piece that far up!`,
+          context: updatedProps,
+          notify: true,
+        }
 
       if (
         updatedProps.homeX !== undefined &&
@@ -176,9 +201,10 @@ export default function({
       this.gold -= cost
       return cost
     },
-    playVs(enemy, dimensions = { x: 8, y: 8 }) {
+
+    playVs(enemy) {
       const board = gameManager({
-        dimensions,
+        dimensions: this.dimensions,
         pieces: [
           ...enemy.pieces,
           ...this.pieces.map(p => ({ ...p, color: 'black' })),

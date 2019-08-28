@@ -33,9 +33,15 @@ export default function({ dimensions, pieces }) {
             gameState: this.toString(),
           })
           this.stepCount++
+          if (this.stepCount > 200) {
+            this.steps.push({
+              event: JSON.stringify({ type: 'stalemate' }),
+              gameState: this.toString(),
+            })
+            this.stepCount++
+            break
+          }
         }
-
-        // todo add stalemate check
       }
 
       // console.log('Game won by', this.winner, 'in', this.stepCount, 'moves.')

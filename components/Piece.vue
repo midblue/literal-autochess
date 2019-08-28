@@ -1,11 +1,11 @@
 <template>
   <div
     class="piece"
-    :class="type + ' ' + (color || 'white') + ' ' + (moving ? 'moving' : '')"
+    :class="type + ' ' + (color || 'white') + ' ' + (moving ? 'moving' : '') + ' ' + (damage ? 'damage' : '')"
     :style="{'grid-column': bench !== false ? `${bench + 1}/${bench+2}` : (x + 1) + '/' + (x+2), 'grid-row': bench !== false ? '1/2' : (y + 1) + '/' + (y+2)}"
   >
     <div
-      :style="{'background': `url('/pieceImages/${color.substring(0,1) + indicator.substring(0,1)}.svg')`}"
+      :style="{'background': `url('/autochess/pieceImages/${color.substring(0,1) + indicator.substring(0,1)}.svg')`}"
     ></div>
   </div>
 </template>
@@ -20,6 +20,7 @@ export default {
       default: 'white',
     },
     moving: { default: false },
+    damage: { default: false },
     indicator: {},
     bench: { default: false },
   },
@@ -44,6 +45,8 @@ export default {
   align-items: center;
   justify-content: center;
   user-select: none;
+  transition: box-shadow 0.2s, transform 0.2s, opacity 0.2s, background 0.2s;
+  // todo not animating properly
 
   div {
     width: 100%;
@@ -52,20 +55,10 @@ export default {
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: box-shadow 0.2s, transform 0.2s, opacity 0.2s, background 0.2s;
+
     // box-shadow: 0 3px 3px rgba(black, 0.1);
     background-size: contain;
     background-repeat: no-repeat;
-  }
-
-  &.black div {
-    background: #222;
-    color: white;
-  }
-
-  &.white div {
-    color: #222;
-    background: white;
   }
 
   &.pawn div {
@@ -86,11 +79,19 @@ export default {
   }
 }
 
-.moving > div {
-  transition: box-shadow 0.4s, transform 0.4s, opacity 0.4s;
-  opacity: 1 !important;
+.moving {
+  transition: background 0.4s, box-shadow 0.4s, transform 0.4s, opacity 0.4s;
   transform: scale(1.3, 1.3);
   background: rgba(white, 0.8);
   box-shadow: 0 3px 12px rgba(black, 0.3);
+  z-index: 2;
+
+  div {
+    opacity: 1 !important;
+  }
+}
+.damage {
+  transition: background 0.4s;
+  background: rgba(red, 0.5) !important;
 }
 </style>

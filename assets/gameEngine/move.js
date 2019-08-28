@@ -1,5 +1,5 @@
 import collision from './collision'
-const validMoves = collision.validMoves
+const validActions = collision.validActions
 
 let piecesToMove = []
 let lastMoveId = ''
@@ -15,22 +15,22 @@ export default function(board, isNewGame) {
     if (!piecesToMove.length) getPiecesToMove(board)
     if (piecesToMove.length === 1 && piecesToMove[0].id === lastMoveId) {
       getPiecesToMove(board)
-      console.log('resetting list')
+      // console.log('resetting list')
     }
     if (!piecesToMove.length) continue
     const piece = piecesToMove.pop()
     if (!piece || piece.hp < 1) continue
     if (piece.id === lastMoveId) {
       piecesToMove.unshift(piece)
-      console.log(
-        'shifting list',
-        piecesToMove.map(p => p.color + ' ' + p.type)
-      )
+      // console.log(
+      //   'shifting list',
+      //   piecesToMove.map(p => p.color + ' ' + p.type)
+      // )
       continue
     }
     // todo still sometimes double moving
     lastMoveId = piece.id
-    console.log(piece.color + ' ' + piece.type)
+    // console.log(piece.color + ' ' + piece.type)
     turnAction = takeAction(piece, board)
   }
   return turnAction
@@ -48,7 +48,7 @@ export default function(board, isNewGame) {
 
 function getPiecesToMove(board) {
   piecesToMove = shuffleArray([...board.pieces.filter(p => p.hp > 0)])
-  console.log(piecesToMove.map(p => p.color + ' ' + p.type))
+  // console.log('list to move', piecesToMove.map(p => p.color + ' ' + p.type))
 
   // piecesToMove = piecesToMove.concat(
   //   shuffleArray([...board.pieces.filter(p => p.hp > 0)])
@@ -70,20 +70,60 @@ function getPiecesToMove(board) {
   //   })
 }
 
-function takeAction(piece, board) {
-  if (!piece || board.gameOver || piece.hp < 1) return
-  const { moves, attacks } = validMoves(piece, board)
-  let selected
-  let event
-  if (attacks.length) {
-    selected = attacks[Math.floor(Math.random() * attacks.length)]
+function selectAction(actions) {
+  let selected = null
+  // * pure best option
+  // selected = actions.sort((a, b) => b.rating.value - a.rating.value)[0]
 
+  // * pure worst option
+  // selected = actions.sort((a, b) => a.rating.value - b.rating.value)[0]
+
+  // * give some degree of randomness, but prioritize good moves
+  if (!actions || !actions.length) return console.log('no action to choose!')
+  let selectCutoff = Math.random() + 0.5,
+    keepTrying = actions.length * 15
+  while (!selected && keepTrying) {
+    selected = actions[Math.floor(Math.random() * actions.length)]
+    // console.log(selected.rating, selectCutoff, actions.length)
+    if (!selected.rating) {
+      console.log('no rating!', selected)
+      break
+    }
+    if (selected.rating.value < selectCutoff) selected = null
+    selectCutoff -= 0.05
+    keepTrying--
+  }
+
+  if (!selected) selected = actions[Math.floor(Math.random() * actions.length)]
+  console.log(
+    'went with',
+    selected.rating.value,
+    selected,
+    actions.map(a => ({ ...a, ratingNum: a.rating.value })),
+    keepTrying ? keepTrying : 0
+  )
+  return selected
+}
+
+function takeAction(piece, board) {
+  // todo join all move/attack types together and pick from THAT pool so it doesnt always attack if it can
+  if (!piece || board.gameOver || piece.hp < 1) return
+  const { moves, attacks } = validActions(piece, board, true)
+  console.log(piece.name(), attacks, moves)
+  let selected = selectAction([...attacks, ...moves])
+  let event
+
+  if (!selected) {
+    return false
+    // no move
+  } else if (selected.type === 'attack') {
     event = {
       type: selected.pieceToAttack.hp - piece.damage <= 0 ? 'kill' : 'damage',
       amount: piece.damage,
       piece: piece.toEssentials(),
       from: piece.toEssentials(),
       to: selected.pieceToAttack.toEssentials(),
+      rating: selected.rating,
     }
 
     // deal damage and call callback
@@ -106,9 +146,11 @@ function takeAction(piece, board) {
     // otherwise stay at attack range
     else {
       if (piece.x === selected.fromX && piece.y === selected.fromY)
-        return (event.attackInPlace = true)
-      piece.x = selected.fromX
-      piece.y = selected.fromY
+        event.attackInPlace = true
+      else {
+        piece.x = selected.fromX
+        piece.y = selected.fromY
+      }
     }
 
     // check for game over
@@ -124,10 +166,7 @@ function takeAction(piece, board) {
       event.winner = piece.color
       board.endGame(piece.color)
     }
-  } else if (moves.length) {
-    selected = moves[Math.floor(Math.random() * moves.length)]
-    // todo pick "good" move or at least close to enemy units
-
+  } else if (selected.type === 'move') {
     event = {
       type: 'move',
       fromX: piece.x,
@@ -135,13 +174,11 @@ function takeAction(piece, board) {
       toX: selected.x,
       toY: selected.y,
       piece: piece.toEssentials(),
+      rating: selected.rating,
     }
 
     piece.x = selected.x
     piece.y = selected.y
-  } else {
-    return false
-    // no move
   }
   piece.onMove
     ? piece.onMove({
@@ -152,6 +189,8 @@ function takeAction(piece, board) {
         },
       })
     : {}
+
+  // console.log(event)
   return event
 }
 

@@ -47,6 +47,7 @@ export default {
   },
   methods: {
     startDrag(e) {
+      e.preventDefault()
       this.dragging = true
       this.$emit('startdrag')
       window.addEventListener('mouseup', this.dragEnd)
@@ -57,10 +58,12 @@ export default {
       this.dragX = 0
     },
     dragMove(e) {
+      e.preventDefault()
       this.dragY = e.clientY - this.startY
       this.dragX = e.clientX - this.startX
     },
     dragEnd(e) {
+      e.preventDefault()
       this.dragging = false
       window.removeEventListener('mouseup', this.dragEnd)
       window.removeEventListener('mousemove', this.dragMove)
@@ -77,8 +80,6 @@ export default {
       let newYPercent = (e.clientY - boardTop) / boardHeight
 
       // console.log(newXPercent, newYPercent)
-
-      //todo this is measuring from the mouse, not the middle of the piece?
 
       this.$emit('enddrag', {
         x: newXPercent,

@@ -12,6 +12,9 @@ const commonFunctions = function() {
         bench: this.bench,
       }
     },
+    name: function() {
+      return this.color + ' ' + this.type
+    },
     dealDamage: function(damage) {
       this.hp -= damage
     },
@@ -132,7 +135,6 @@ const king = ({ color = 'white', x, y, bench = false }) => ({
   hp: 1,
   baseHp: 1,
   damage: 1,
-  run: true,
   movement: { direction: [0, 1, 2, 3, 4, 5, 6, 7], distance: 1 },
   attack: { direction: [0, 1, 2, 3, 4, 5, 6, 7], distance: 1 },
   onDamage({ damage, attacker }) {

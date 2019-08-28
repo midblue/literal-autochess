@@ -20,9 +20,10 @@ export default {
   plugins: [],
   buildModules: [],
   modules: [],
-
+  router: {
+    base: '/autochess/',
+  },
   build: {
-    publicPath: '/autochess/_nuxt/',
     extend(config, ctx) {},
   },
 }

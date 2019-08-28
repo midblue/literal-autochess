@@ -1,38 +1,20 @@
+import pool from './pieceManagement/buyPool'
 const autoLevels = []
 
-export default function(levelNum) {
+export default function(levelNum, dimensions) {
+  // todo make this based on a buy system, cpu has x money
   if (autoLevels[levelNum]) return autoLevels[levelNum]
-  const pool = [
-    'pawn',
-    'pawn',
-    'pawn',
-    'pawn',
-    'pawn',
-    'pawn',
-    'pawn',
-    'pawn',
-    'pawn',
-    'pawn',
-    'bishop',
-    'bishop',
-    'bishop',
-    'knight',
-    'knight',
-    'knight',
-    'rook',
-    'rook',
-    'rook',
-    'queen',
-    'king',
-  ]
-  const pieces = [{ type: 'king', x: 4, y: 0 }]
+  const halfway = Math.ceil(dimensions.x / 2)
+  const pieces = [{ type: 'king', x: halfway, y: 0 }]
+  if (levelNum > 3) pieces.push({ type: 'pawn', x: halfway, y: 1 })
+  if (levelNum > 5) pieces.push({ type: 'pawn', x: halfway - 1, y: 1 })
   for (let i = 1; i < levelNum; i++) {
     let type = pool[Math.floor(Math.random() * pool.length)]
-    let x = Math.floor(Math.random() * 8)
-    let y = Math.floor(Math.random() * 4)
+    let x = Math.floor(Math.random() * dimensions.x)
+    let y = Math.floor(Math.random() * Math.floor(dimensions.y / 2))
     while (pieces.find(p => p.x === x && p.y === y) && pieces.length < 32) {
-      x = Math.floor(Math.random() * 8)
-      y = Math.floor(Math.random() * 4)
+      x = Math.floor(Math.random() * dimensions.x)
+      y = Math.floor(Math.random() * Math.floor(dimensions.y / 2))
     }
     pieces.push({ type, x, y })
   }

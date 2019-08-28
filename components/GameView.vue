@@ -22,7 +22,7 @@
       />
       <div class="winbanner" :class="{fade: fadeSlider}" v-if="winner">
         <div>
-          <div>{{winner === 'black' ? 'You win!': 'You lost.'}}</div>
+          <div>{{winner === 'black' ? 'You win!': winner === 'stalemate' ? `It's a draw!` : 'You lost.'}}</div>
           <div
             class="sub"
           >You get {{player.previousWinnings.winGold}} gold for {{winner === 'black' ? 'winning' : 'playing' }}{{player.previousWinnings.interestGold ? `, and ${player.previousWinnings.interestGold} gold as interest.` : '.' }}</div>
@@ -35,7 +35,7 @@
           @mousedown="fadeSlider = true"
           @mouseup="fadeSlider = false"
         />
-        <button @click="$emit('done')">{{winner === 'black' ? 'Next Level': 'Try Again'}}</button>
+        <button @click="$emit('next')">{{winner === 'black' ? 'Next Level': 'Try Again'}}</button>
       </div>
 
       <transition-group
@@ -56,6 +56,7 @@
           :color="piece.color"
           :id="piece.id"
           :moving="movingId === piece.id"
+          :damage="damageId === piece.id"
         />
       </transition-group>
 
@@ -106,13 +107,13 @@
         />
       </span>
     </template>
-    <br />
+
     <span
       class="bench"
       ref="bench"
       :class="{nointeract: gameData, dropzone: draggingPiece}"
       :style="{
-      'grid-template-columns': `repeat(8, ${columnWidth}px)`, height: `${columnWidth}px`, width: `${8 * columnWidth}px`}"
+      'grid-template-columns': `repeat(${this.player.dimensions.x}, ${columnWidth}px)`, height: `${columnWidth}px`, width: `${this.player.dimensions.x * columnWidth}px`}"
     >
       <MovablePiece
         v-for="piece, index in player.bench"
@@ -161,6 +162,7 @@ export default {
       auto: true,
       autoInterval: null,
       movingId: null,
+      damageId: null,
       fadeSlider: false,
       draggingPiece: false,
     }
@@ -183,21 +185,24 @@ export default {
       this.winner = null
       this.auto = true
       this.movingId = null
+      this.damageId = null
       this.currentSpeed = this.autoSpeed
       this.advance()
     },
     currentEvent(newEvent) {
       if (!newEvent) return
       this.movingId = null
-      if (['damage', 'kill'].includes(newEvent.type)) {
+      this.damageId = null
+      if (['damage', 'kill', 'win'].includes(newEvent.type)) {
         this.movingId = newEvent.from.id
-        // this.activePopovers.push({
-        //   x: newEvent.to.x,
-        //   y: newEvent.to.y,
-        //   amount: newEvent.amount,
-        //   id: `${Math.random()}`.substring(2),
-        // })
-        // setTimeout(() => this.activePopovers.shift(), 3000)
+        this.damageId = newEvent.to.id
+        this.activePopovers.push({
+          x: newEvent.to.x,
+          y: newEvent.to.y,
+          amount: newEvent.amount,
+          id: `${Math.random()}`.substring(2),
+        })
+        setTimeout(() => this.activePopovers.shift(), 1000)
       }
       if (newEvent.attackInPlace) {
         console.log('nomove')
@@ -210,8 +215,17 @@ export default {
         this.movingId = newEvent.from.id
         if (this.winner) return
         this.winner = newEvent.winner
-        this.$emit('win', newEvent.winner === 'black')
+        this.$emit('playbackFinished', newEvent.winner === 'black')
       }
+      if (newEvent.type === 'stalemate') {
+        this.movingId = null
+        if (this.winner) return
+        this.winner = 'stalemate'
+        this.$emit('playbackFinished')
+      }
+    },
+    playbackPosition() {
+      this.$emit('playbackPosition', this.playbackPosition)
     },
   },
   methods: {
@@ -223,8 +237,9 @@ export default {
         this.autoSpeed * ((this.playbackPosition / this.gameData.length) * 2)
 
       setTimeout(this.advance, this.currentSpeed)
-      if (this.playbackPosition < this.gameData.length - 1)
+      if (this.playbackPosition < this.gameData.length - 1) {
         this.playbackPosition++
+      }
     },
     reverse() {
       if (this.playbackPosition > 0) this.playbackPosition--
@@ -290,7 +305,7 @@ export default {
       background: linear-gradient(
         to bottom,
         rgba(white, 0.2) 50%,
-        rgba(gold, 0.1) 50%
+        rgba(gold, 0.3) 50%
       );
     }
 
@@ -313,6 +328,7 @@ export default {
 }
 
 .bench {
+  margin-top: 10px;
   position: relative;
   display: grid;
   z-index: 1;
@@ -320,7 +336,7 @@ export default {
   background: rgba(black, 0.02);
 
   &.dropzone {
-    background: rgba(gold, 0.1);
+    background: rgba(gold, 0.3);
   }
 }
 
@@ -350,7 +366,7 @@ export default {
   text-align: center;
   font-size: 1.5rem;
   position: absolute;
-  top: 50%;
+  top: 45%;
   left: 50%;
   background: rgba(white, 0.95);
   transform: translateX(-50%) translateY(-50%);
