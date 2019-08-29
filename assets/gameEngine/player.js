@@ -5,7 +5,7 @@ export default function({
   pieces = [{ type: 'king', color: 'black', x: 3, y: 7 }],
   bench = [],
   hp = 5,
-  gold = 2,
+  gold = 0,
   isHuman = false,
   level = 1,
   color = 'white',
@@ -171,6 +171,9 @@ export default function({
       pieceToUpdate.y = pieceToUpdate.homeY
       return true
     },
+    applyUpgrade(type) {
+      if (type === 'hp') this.hp++
+    },
     onGameReset() {
       this.pieces.forEach(p => {
         if (p.onGameReset) p.onGameReset()
@@ -188,10 +191,13 @@ export default function({
       return this.hp > 0
     },
     addGold(didWin) {
-      let winGold = didWin ? 4 : 2
+      let winGold = didWin ? 4 : 1
       let interestGold = Math.min(5, Math.floor(this.gold / 10))
       this.gold += winGold + interestGold
       this.previousWinnings = { didWin, winGold, interestGold }
+    },
+    resetPreviousGold() {
+      this.previousWinnings = { didWin: null, winGold: 0, interestGold: 0 }
     },
     canBuy(cost) {
       return cost <= this.gold

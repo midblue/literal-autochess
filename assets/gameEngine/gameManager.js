@@ -33,7 +33,7 @@ export default function({ dimensions, pieces }) {
             gameState: this.toString(),
           })
           this.stepCount++
-          if (this.stepCount > 200) {
+          if (this.stepCount === 150) {
             this.steps.push({
               event: JSON.stringify({ type: 'stalemate' }),
               gameState: this.toString(),

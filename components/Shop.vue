@@ -3,19 +3,21 @@
     <div class="shop">
       <div class="sectionlabel">Shop</div>
       <div
-        v-for="piece, index in buyablePieces"
-        :key="piece + index"
+        v-for="item, index in buyablePieces"
+        :key="item + index"
         class="shopitem"
-        @click="buy(piece)"
-        :class="{fade: prices.pieces[piece] > player.gold}"
+        @click="buy(item)"
+        :class="{fade: item.price > player.gold}"
       >
         <Piece
+          v-if="item.type==='piece'"
           class="piece"
-          :type="piece"
+          :type="item.name"
           color="black"
-          :indicator=" piece === 'knight' ? 'n' : piece.substring(0,1)"
+          :indicator=" item.name === 'knight' ? 'n' : item.name.substring(0,1)"
         />
-        <div class="price">{{ prices.pieces[piece]}}</div>
+        <UpgradeIcon v-else :type="item.name" />
+        <div class="price">{{ item.price }}</div>
       </div>
     </div>
     <div class="notification" v-if="notification">{{notification}}</div>
@@ -24,18 +26,32 @@
 
 <script>
 import Piece from '~/components/Piece'
+import UpgradeIcon from '~/components/UpgradeIcon'
 import prices from '~/assets/pieceManagement/prices'
 import pool from '~/assets/pieceManagement/buyPool'
 
 export default {
-  components: { Piece },
+  components: { Piece, UpgradeIcon },
   props: {
     player: {},
     gameData: {},
+    count: { default: 4 },
   },
   data() {
     return {
       prices,
+      totalPool: [
+        ...pool.pieces.map(p => ({
+          name: p,
+          type: 'piece',
+          price: prices.pieces[p],
+        })),
+        ...pool.upgrades.map(p => ({
+          name: p,
+          type: 'upgrade',
+          price: prices.upgrades[p],
+        })),
+      ],
       buyablePieces: [],
       notification: '',
     }
@@ -43,7 +59,7 @@ export default {
   computed: {},
   watch: {
     gameData(newData) {
-      if (newData) this.resetItems()
+      if (!newData) this.resetItems()
     },
   },
   mounted() {
@@ -52,22 +68,26 @@ export default {
   methods: {
     resetItems() {
       this.buyablePieces = []
-      for (let i = 0; i < 4; i++) {
-        this.buyablePieces = [
-          ...this.buyablePieces,
-          pool[Math.floor(Math.random() * pool.length)],
-        ]
+      for (let i = 0; i < this.count; i++) {
+        this.buyablePieces.push(
+          this.totalPool[Math.floor(Math.random() * this.totalPool.length)]
+        )
       }
     },
     buy(item) {
-      if (!prices.pieces[item]) return
-      const success = this.player.buy(prices.pieces[item])
+      if (!item.price) return
+
+      const success = this.player.buy(item.price)
+
       if (success) {
         this.buyablePieces.splice(
           this.buyablePieces.findIndex(p => p === item),
           1
         )
-        this.player.addPiece({ type: item, x: 3, y: 4, bench: true })
+
+        if (item.type === 'piece')
+          this.player.addPiece({ type: item.name, x: 3, y: 4, bench: true })
+        else if (item.type === 'upgrade') this.player.applyUpgrade(item.name)
       } else {
         this.$emit('notify', 'Not enough money!')
       }

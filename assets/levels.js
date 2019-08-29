@@ -1,15 +1,20 @@
 import pool from './pieceManagement/buyPool'
+import prices from './pieceManagement/prices'
 const autoLevels = []
 
 export default function(levelNum, dimensions) {
-  // todo make this based on a buy system, cpu has x money
   if (autoLevels[levelNum]) return autoLevels[levelNum]
   const halfway = Math.ceil(dimensions.x / 2)
   const pieces = [{ type: 'king', x: halfway, y: 0 }]
   if (levelNum > 3) pieces.push({ type: 'pawn', x: halfway, y: 1 })
   if (levelNum > 5) pieces.push({ type: 'pawn', x: halfway - 1, y: 1 })
-  for (let i = 1; i < levelNum; i++) {
-    let type = pool[Math.floor(Math.random() * pool.length)]
+
+  // * buy system
+  let gold = levelNum * 3
+  while (gold >= prices.pieces.pawn) {
+    const type = pool.pieces[Math.floor(Math.random() * pool.pieces.length)]
+    if (gold < prices.pieces[type]) continue
+    gold -= prices.pieces[type]
     let x = Math.floor(Math.random() * dimensions.x)
     let y = Math.floor(Math.random() * Math.floor(dimensions.y / 2))
     while (pieces.find(p => p.x === x && p.y === y) && pieces.length < 32) {
@@ -18,6 +23,18 @@ export default function(levelNum, dimensions) {
     }
     pieces.push({ type, x, y })
   }
+
+  // * levelNum of random pieces
+  // for (let i = 1; i < levelNum; i++) {
+  //   let type = pool.pieces[Math.floor(Math.random() * pool.pieces.length)]
+  //   let x = Math.floor(Math.random() * dimensions.x)
+  //   let y = Math.floor(Math.random() * Math.floor(dimensions.y / 2))
+  //   while (pieces.find(p => p.x === x && p.y === y) && pieces.length < 32) {
+  //     x = Math.floor(Math.random() * dimensions.x)
+  //     y = Math.floor(Math.random() * Math.floor(dimensions.y / 2))
+  //   }
+  //   pieces.push({ type, x, y })
+  // }
   autoLevels[levelNum] = pieces
   return pieces
   // return manualLevels[levelNum]

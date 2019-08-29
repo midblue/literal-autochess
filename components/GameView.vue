@@ -22,12 +22,18 @@
       />
       <div class="winbanner" :class="{fade: fadeSlider}" v-if="winner">
         <div>
-          <div>{{winner === 'black' ? 'You win!': winner === 'stalemate' ? `It's a draw!` : 'You lost.'}}</div>
+          <h3>{{winner === 'black' ? 'You win!': winner === 'stalemate' ? `It's a draw!` : 'You lost.'}}</h3>
           <div
+            v-if="player.previousWinnings.winGold"
             class="sub"
           >You get {{player.previousWinnings.winGold}} gold for {{winner === 'black' ? 'winning' : 'playing' }}{{player.previousWinnings.interestGold ? `, and ${player.previousWinnings.interestGold} gold as interest.` : '.' }}</div>
+          <div class="sub2" v-if="winner === 'black'">
+            Only
+            <b>14%</b> of players make it this far.
+          </div>
         </div>
         <input
+          class="scrubber"
           type="range"
           v-model="playbackPosition"
           min="0"
@@ -66,9 +72,6 @@
         class="eventpopover"
         :style="{top: popover.y * (100/dimensions.y) + (50/dimensions.y) + '%', left:popover.x * (100/dimensions.x) + (50/dimensions.x) + '%' }"
       >{{popover.amount}}</div>
-      <!-- <button  @click="toggleAuto">Auto</button> -->
-      <!-- <button @click="advance">Advance</button>
-      <button @click="reverse">Reverse</button>-->
     </template>
 
     <template v-else>
@@ -102,8 +105,6 @@
           :id="piece.id"
           @startdrag="startPieceDrag"
           @enddrag="placePiece"
-          :boardElement="$refs.board"
-          :benchElement="$refs.bench"
         />
       </span>
     </template>
@@ -124,8 +125,6 @@
         :id="piece.id"
         @startdrag="startPieceDrag"
         @enddrag="placePiece"
-        :boardElement="$refs.board"
-        :benchElement="$refs.bench"
         :bench="piece.bench"
       />
     </span>
@@ -153,8 +152,8 @@ export default {
   },
   data() {
     return {
-      autoSpeed: 200,
-      currentSpeed: 200,
+      autoSpeed: 250,
+      currentSpeed: 1,
       columnWidth: 50,
       playbackPosition: -1,
       activePopovers: [],
@@ -196,20 +195,19 @@ export default {
       if (['damage', 'kill', 'win'].includes(newEvent.type)) {
         this.movingId = newEvent.from.id
         this.damageId = newEvent.to.id
-        this.activePopovers.push({
-          x: newEvent.to.x,
-          y: newEvent.to.y,
-          amount: newEvent.amount,
-          id: `${Math.random()}`.substring(2),
-        })
-        setTimeout(() => this.activePopovers.shift(), 1000)
+        // this.activePopovers.push({
+        //   x: newEvent.to.x,
+        //   y: newEvent.to.y,
+        //   amount: newEvent.amount,
+        //   id: `${Math.random()}`.substring(2),
+        // })
+        // setTimeout(() => this.activePopovers.shift(), 1000)
       }
       if (newEvent.attackInPlace) {
-        console.log('nomove')
+        // console.log('nomove')
       }
       if (newEvent.type === 'move') {
         this.movingId = newEvent.piece.id
-        // todo highlight moves?
       }
       if (newEvent.type === 'end') {
         this.movingId = newEvent.from.id
@@ -231,10 +229,16 @@ export default {
   methods: {
     advance() {
       if (!this.gameData || this.winner) return
-      // gradually slow down
+      // gradually slow down)
       this.currentSpeed =
-        this.autoSpeed +
-        this.autoSpeed * ((this.playbackPosition / this.gameData.length) * 2)
+        JSON.parse(this.gameData[this.gameData.length - 1].event).type ===
+        'stalemate'
+          ? this.autoSpeed -
+            this.autoSpeed *
+              ((this.playbackPosition / this.gameData.length) * 0.8)
+          : this.autoSpeed +
+            this.autoSpeed *
+              ((this.playbackPosition / this.gameData.length) * 1)
 
       setTimeout(this.advance, this.currentSpeed)
       if (this.playbackPosition < this.gameData.length - 1) {
@@ -299,13 +303,13 @@ export default {
     display: grid;
     z-index: 1;
     transition: background 0.2s;
-    background: rgba(black, 0.02);
+    background: var(--bg-shade);
 
     &.dropzone {
       background: linear-gradient(
         to bottom,
-        rgba(white, 0.2) 50%,
-        rgba(gold, 0.3) 50%
+        var(--bg-fade) 50%,
+        var(--highlight-light) 50%
       );
     }
 
@@ -317,10 +321,10 @@ export default {
       border: none;
 
       div {
-        border: 1px solid rgba(black, 0.02);
+        border: 1px solid var(--bg-shade);
 
         &.shade {
-          background: rgba(black, 0.05);
+          background: var(--bg-shade2);
         }
       }
     }
@@ -333,10 +337,10 @@ export default {
   display: grid;
   z-index: 1;
   transition: background 0.2s;
-  background: rgba(black, 0.02);
+  background: var(--bg-shade);
 
   &.dropzone {
-    background: rgba(gold, 0.3);
+    background: var(--highlight-light);
   }
 }
 
@@ -355,7 +359,7 @@ export default {
   font-size: 1.4em;
   font-weight: 800;
   position: absolute;
-  color: red;
+  color: var(--damage);
   transform: translateX(-50%) translateY(-50%);
   z-index: 3;
   animation-name: fadeup;
@@ -366,23 +370,22 @@ export default {
   text-align: center;
   font-size: 1.5rem;
   position: absolute;
-  top: 45%;
+  top: 43%;
   left: 50%;
   background: rgba(white, 0.95);
   transform: translateX(-50%) translateY(-50%);
   padding: 20px 30px;
   z-index: 5;
-  min-width: 60%;
+  min-width: 85%;
   transition: all 0.2s;
 
   &.fade {
     opacity: 0.3;
   }
 }
-
-.sub {
-  font-size: 1rem;
-  opacity: 0.8;
+.scrubber {
+  padding: 15px 0;
+  width: 100%;
 }
 
 @keyframes fadeup {

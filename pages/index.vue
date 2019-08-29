@@ -1,13 +1,23 @@
 <template>
-  <main>
+  <main :style="{width: player.dimensions.x * 50 + 'px'}">
     <div class="topbar">
       <h2>Level {{player.level}}</h2>
-      <button @click="newGame" :class="{hidden: runningGameData}">Start Round!</button>
+      <button class="tallbutton" @click="newGame" v-if="!runningGameData">Start Round!</button>
+      <div v-else class="sub">Turn: {{turn}}</div>
     </div>
     <div class="playerstats">
-      <div>Health: {{player.hp}}</div>
-      <div>Gold: {{player.gold}}</div>
-      <div v-if="runningGameData">Turn: {{turn}}</div>
+      <div>
+        <UpgradeIcon type="hp" />
+        <span style="position: relative; top: -5px; left: -5px;">
+          <b>{{player.hp}}</b>
+        </span>
+      </div>
+      <div>
+        <UpgradeIcon type="gold" />
+        <span style="position: relative; top: -5px; left: -5px;">
+          <b>{{player.gold}}</b>
+        </span>
+      </div>
     </div>
     <GameView
       :gameData="runningGameData"
@@ -31,6 +41,7 @@
 
 <script>
 import GameView from '~/components/GameView.vue'
+import UpgradeIcon from '~/components/UpgradeIcon'
 import playerCreator from '~/assets/gameEngine/player'
 import levels from '~/assets/levels'
 import Shop from '~/components/Shop'
@@ -39,14 +50,19 @@ export default {
   components: {
     GameView,
     Shop,
+    UpgradeIcon,
   },
   data() {
     return {
       player: playerCreator({
         isHuman: true,
         color: 'black',
-        pieces: [{ type: 'king', color: 'black', x: 3, y: 5 }],
-        bench: [{ type: 'pawn', color: 'black', bench: 0 }],
+        pieces: [
+          { type: 'king', color: 'black', x: 3, y: 5 },
+          { type: 'pawn', color: 'black', x: 0, y: 4 },
+        ],
+        bench: [],
+        gold: 3,
         dimensions: { x: 6, y: 6 },
       }),
       enemy: {},
@@ -70,13 +86,15 @@ export default {
       this.turn = newPosition
     },
     playbackFinished(didWin) {
+      this.player.resetPreviousGold()
       if (didWin === true) this.player.levelUp()
-      this.player.addGold(didWin)
+      if (didWin !== undefined) this.player.addGold(didWin)
       if (didWin === false) this.player.takeDamage(1)
       // todo adjust damage based on pieces?
       if (this.player.hp <= 0) {
         alert('game over!')
-        //todo reset game
+        // todo reset game
+        // todo make leaderboards
       }
     },
     newGame() {
@@ -116,7 +134,7 @@ main {
   user-select: none;
   position: relative;
   width: 300px;
-  height: 100vh;
+  height: 100%;
   display: flex;
   margin: 0 auto;
   flex-direction: column;
@@ -126,27 +144,42 @@ main {
 
 .topbar {
   width: 100%;
+  height: 25px;
   // margin-bottom: 15px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  position: relative;
+  z-index: 2;
+}
+.tallbutton {
+  position: relative;
+  top: 12px;
+  padding: 16px 20px;
 }
 
 .hidden {
+  width: 0;
+  height: 0;
   opacity: 0;
   pointer-events: none;
 }
 
 .playerstats {
   width: 100%;
-  margin-top: 10px;
+  height: 20px;
+  position: relative;
+  z-index: 1;
+  left: -5px;
+  margin-top: 5px;
   margin-bottom: 15px;
+  font-size: 1.1rem;
   display: flex;
   align-items: center;
   justify-content: flex-start;
 
   & > *:not(:last-of-type) {
-    margin-right: 20px;
+    margin-right: 10px;
   }
 }
 
@@ -157,17 +190,18 @@ main {
 .notification {
   position: absolute;
   z-index: 5;
-  top: 45%;
+  top: 48%;
   left: 50%;
   transform: translatex(-50%) translateY(-50%);
-  color: blueviolet;
-  background: rgba(white, 0.9);
+  color: var(--info);
+  background: var(--bg-overlay);
   padding: 10px 20px;
   font-size: 1.2em;
   font-weight: 600;
   text-align: center;
-  box-shadow: 0 5px 10px rgba(black, 0.2);
+  box-shadow: 0 5px 10px var(--bg-shade3);
   pointer-events: none;
+  min-width: 70%;
 }
 
 .notification-enter,

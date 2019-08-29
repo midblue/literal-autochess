@@ -47,11 +47,21 @@ export default function(board, isNewGame) {
 }
 
 function getPiecesToMove(board) {
-  piecesToMove = shuffleArray([...board.pieces.filter(p => p.hp > 0)])
+  const movablePieces = board.pieces.filter(p => p.hp > 0)
+  // * every piece moves in order before restarting
+  // piecesToMove = [...movablePieces]
+
+  // * every piece moves in a random order before restarting
+  piecesToMove = shuffleArray([...movablePieces])
   // console.log('list to move', piecesToMove.map(p => p.color + ' ' + p.type))
 
+  // * a random piece moves
+  // piecesToMove = [
+  //   movablePieces[Math.floor(Math.random() * movablePieces.length)],
+  // ]
+
   // piecesToMove = piecesToMove.concat(
-  //   shuffleArray([...board.pieces.filter(p => p.hp > 0)])
+  //   shuffleArray([...movablePieces])
   // )
   // return
   // const piecesByPriority = {}
@@ -71,46 +81,63 @@ function getPiecesToMove(board) {
 }
 
 function selectAction(actions) {
-  let selected = null
+  if (!actions || !actions.length) return console.log('no action to choose!')
+  let selected = null,
+    keepTrying,
+    selectCutoff
   // * pure best option
   // selected = actions.sort((a, b) => b.rating.value - a.rating.value)[0]
 
   // * pure worst option
   // selected = actions.sort((a, b) => a.rating.value - b.rating.value)[0]
 
+  // * pure random option
+  // selected = null
+
   // * give some degree of randomness, but prioritize good moves
-  if (!actions || !actions.length) return console.log('no action to choose!')
-  let selectCutoff = Math.random() + 0.5,
-    keepTrying = actions.length * 15
-  while (!selected && keepTrying) {
-    selected = actions[Math.floor(Math.random() * actions.length)]
-    // console.log(selected.rating, selectCutoff, actions.length)
-    if (!selected.rating) {
-      console.log('no rating!', selected)
-      break
-    }
-    if (selected.rating.value < selectCutoff) selected = null
-    selectCutoff -= 0.05
-    keepTrying--
+  // let selectCutoff = Math.random() + .2
+  // keepTrying = actions.length * 3
+  // while (!selected && keepTrying) {
+  //   selected = actions[Math.floor(Math.random() * actions.length)]
+  //   // console.log(selected.rating, selectCutoff, actions.length)
+  //   if (!selected.rating) {
+  //     console.log('no rating!', selected)
+  //     break
+  //   }
+  //   if (selected.rating.value < selectCutoff) selected = null
+  //   selectCutoff -= 0.1
+  //   keepTrying--
+  // }
+  // * v2
+  selectCutoff = Math.random() * 2.5
+  // console.log(selectCutoff)
+  const shuffledActions = shuffleArray(actions)
+  while (!selected) {
+    selected = shuffledActions.find(a => a.rating.value > selectCutoff)
+    selectCutoff -= 0.2
   }
 
   if (!selected) selected = actions[Math.floor(Math.random() * actions.length)]
-  console.log(
-    'went with',
-    selected.rating.value,
-    selected,
-    actions.map(a => ({ ...a, ratingNum: a.rating.value })),
-    keepTrying ? keepTrying : 0
-  )
+  // console.log(
+  //   'went with',
+  //   selected.rating.value,
+  //   selected,
+  //   // actions.map(a => ({ ...a, ratingNum: a.rating.value })),
+  //   'tries left:',
+  //   keepTrying ? keepTrying : 0,
+  //   selectCutoff ? selectCutoff : 0
+  // )
   return selected
 }
 
 function takeAction(piece, board) {
-  // todo join all move/attack types together and pick from THAT pool so it doesnt always attack if it can
   if (!piece || board.gameOver || piece.hp < 1) return
   const { moves, attacks } = validActions(piece, board, true)
-  console.log(piece.name(), attacks, moves)
-  let selected = selectAction([...attacks, ...moves])
+  // console.log(piece.name(), attacks, moves)
+
+  const actionsPool = [...attacks, ...moves]
+
+  let selected = selectAction(actionsPool)
   let event
 
   if (!selected) {

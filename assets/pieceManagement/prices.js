@@ -9,10 +9,12 @@ const pieces = {
 
   king: 15,
 
-  pawn: 2,
+  pawn: 3,
 }
 
-const upgrades = {}
+const upgrades = {
+  hp: 5,
+}
 
 // todo have passive upgrades too
 

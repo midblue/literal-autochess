@@ -5,8 +5,10 @@
     :style="{'grid-column': bench !== false ? `${bench + 1}/${bench+2}` : (x + 1) + '/' + (x+2), 'grid-row': bench !== false ? '1/2' : (y + 1) + '/' + (y+2)}"
   >
     <div
+      class="pieceicon"
       :style="{'background': `url('/autochess/pieceImages/${color.substring(0,1) + indicator.substring(0,1)}.svg')`}"
     ></div>
+    <div class="piecebg"></div>
   </div>
 </template>
 
@@ -36,62 +38,83 @@ export default {
 
 <style lang="scss" scoped>
 .piece {
+  --endspeed: 0.3s;
+  --startspeed: 0.15s;
   position: relative;
-  width: 100%;
-  height: 100%;
+  width: 50px;
+  height: 50px;
   max-width: 50px;
   z-index: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   user-select: none;
-  transition: box-shadow 0.2s, transform 0.2s, opacity 0.2s, background 0.2s;
-  // todo not animating properly
 
   div {
     width: 100%;
     height: 100%;
-    // border-radius: 50%;
+  }
+
+  .pieceicon {
     display: flex;
     align-items: center;
     justify-content: center;
-
-    // box-shadow: 0 3px 3px rgba(black, 0.1);
     background-size: contain;
     background-repeat: no-repeat;
+    transition: transform var(--endspeed), opacity var(--endspeed);
+    z-index: 3;
   }
 
-  &.pawn div {
+  .piecebg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform: scale(1, 1);
+    background: transparent;
+    box-shadow: none;
+    transition: box-shadow var(--endspeed), transform var(--endspeed),
+      opacity var(--endspeed), background var(--endspeed);
+    z-index: 2;
+  }
+
+  &.pawn .pieceicon {
     opacity: 0.75;
     width: 75%;
     height: 75%;
   }
 
-  &.rook div,
-  &.bishop div,
-  &.knight div {
+  &.rook .pieceicon,
+  &.bishop .pieceicon,
+  &.knight .pieceicon {
     width: 85%;
     height: 85%;
   }
 
-  &.king div {
-    border: 4px solid gold;
+  &.king .pieceicon {
+    border: 4px solid var(--highlight);
   }
 }
 
 .moving {
-  transition: background 0.4s, box-shadow 0.4s, transform 0.4s, opacity 0.4s;
-  transform: scale(1.3, 1.3);
-  background: rgba(white, 0.8);
-  box-shadow: 0 3px 12px rgba(black, 0.3);
   z-index: 2;
 
-  div {
+  .piecebg {
+    transition: background var(--startspeed), box-shadow var(--startspeed),
+      transform var(--startspeed), opacity var(--startspeed);
+    transform: scale(1.3, 1.3);
+    background: var(--bg-overlay);
+    box-shadow: 0 3px 12px var(--bg-shade3);
+  }
+
+  .pieceicon {
+    transition: background var(--startspeed), box-shadow var(--startspeed),
+      transform var(--startspeed), opacity var(--startspeed);
+    transform: scale(1.3, 1.3);
     opacity: 1 !important;
   }
 }
-.damage {
-  transition: background 0.4s;
-  background: rgba(red, 0.5) !important;
+
+.damage .piecebg {
+  background: var(--damage-fade) !important;
 }
 </style>

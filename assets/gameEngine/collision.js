@@ -66,7 +66,7 @@ function ray(fromX, fromY, distance, vector, board, piece) {
 }
 
 function getSpaceRating(color, type, x, y, board, fromX, fromY) {
-  let baseRating = 0.3
+  let baseRating = 0.5
 
   // console.log('getting rating', color, type, x, y)
   let willHitBonus = 0,
@@ -90,8 +90,8 @@ function getSpaceRating(color, type, x, y, board, fromX, fromY) {
   // can be hit
   const danger = isInDangerFrom(color, x, y, board, fromX, fromY)
   if (danger.length) {
-    dangerMinus = danger.length
-    if (type === 'king') dangerMinus *= 2
+    dangerMinus = danger.length * 0.7
+    // if (type === 'king') dangerMinus *= 2
     // console.log('dangerMinus')
   }
 
@@ -140,8 +140,6 @@ function isInDangerFrom(color, x, y, board, fromX, fromY) {
 function canHitPiecesFrom(color, type, x, y, board) {
   return validActions(pieces[type]({ color, x, y }), board, false).attacks
 }
-
-// todo make isInDanger check for king
 
 function validActions(piece, board, getRatings = false) {
   if (piece.type === 'knight') return knightMoves(piece, board, getRatings)
