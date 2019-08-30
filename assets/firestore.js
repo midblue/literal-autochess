@@ -94,6 +94,12 @@ function addGameCompleted(player) {
 }
 
 function addHighScore({ level, name }) {
+  if (
+    /(nigger|fag|spic|wetback|towelhead|nigga|fuck|shit|cunt|cock|bitch)/gi.exec(
+      name
+    )
+  )
+    return alert('Nope! No names like that, please!')
   const foundLowerHighScore = !!highScores.find(hs => hs.level <= level)
   if (foundLowerHighScore && highScores.length >= 10) highScores.pop()
   highScores.push({ level, name })
