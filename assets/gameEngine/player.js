@@ -4,7 +4,7 @@ import generatePieces from './generatePieces'
 export default function({
   pieces = [{ type: 'king', color: 'black', x: 3, y: 7 }],
   bench = [],
-  hp = 5,
+  hp = 3,
   gold = 0,
   isHuman = false,
   level = 1,

@@ -23,4 +23,5 @@ export default {
     'king',
   ],
   upgrades: ['hp', 'hp', 'hp'],
+  flatPieces: ['pawn', 'bishop', 'knight', 'rook', 'queen', 'king'],
 }

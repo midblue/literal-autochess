@@ -110,12 +110,12 @@ button {
 .sub {
   font-size: 1rem;
   opacity: 0.8;
-  line-height: 1.6;
+  line-height: 1.4;
 }
 .sub2 {
   font-size: 0.8rem;
   opacity: 0.7;
-  line-height: 1.6;
+  line-height: 1.4;
 }
 
 .sectionlabel {

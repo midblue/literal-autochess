@@ -1,70 +1,70 @@
 <template>
-  <main :style="{width: player.dimensions.x * 50 + 'px'}">
-    <div class="topbar">
-      <h2>Level {{player.level}}</h2>
-      <button class="tallbutton" @click="newGame" v-if="!runningGameData">Start Round!</button>
-      <div v-else class="sub">Turn: {{turn}}</div>
-    </div>
-    <div class="playerstats">
-      <div>
-        <UpgradeIcon type="hp" />
-        <span style="position: relative; top: -5px; left: -5px;">
-          <b>{{player.hp}}</b>
-        </span>
+  <main :style="{width: this.gamePixelWidth + 'px'}">
+    <template v-if="view === 'game'">
+      <div class="topbar">
+        <h2>Level {{player.level}}</h2>
+        <button class="tallbutton" @click="newGame" v-if="!runningGameData">Start Round</button>
+        <div v-else class="sub">Turn {{turn}}</div>
       </div>
-      <div>
-        <UpgradeIcon type="gold" />
-        <span style="position: relative; top: -5px; left: -5px;">
-          <b>{{player.gold}}</b>
-        </span>
+      <div class="playerstats">
+        <div>
+          <UpgradeIcon type="hp" />
+          <span style="position: relative; top: -5px; left: -5px;">
+            <b>{{player.hp}}</b>
+          </span>
+        </div>
+        <div>
+          <UpgradeIcon type="gold" />
+          <span style="position: relative; top: -5px; left: -5px;">
+            <b>{{player.gold}}</b>
+          </span>
+        </div>
       </div>
-    </div>
-    <GameView
-      :gameData="runningGameData"
-      :player="player"
-      :enemy="enemy"
-      :dimensions="player.dimensions"
-      @next="prepareNextRound"
-      @playbackFinished="playbackFinished"
-      @playbackPosition="playbackPosition"
-      @updatePiece="updatePiece"
-      @sendToBench="sendToBench"
-      @playFromBench="playFromBench"
-      @notify="notify"
-    />
-    <Shop class="shop" :gameData="runningGameData" :player="player" @notify="notify" />
-    <transition name="notification">
-      <div class="notification" v-if="notification">{{notification}}</div>
-    </transition>
+      <GameView
+        :gameData="runningGameData"
+        :player="player"
+        :enemy="enemy"
+        :dimensions="player.dimensions"
+        @next="prepareNextRound"
+        @playbackFinished="playbackFinished"
+        @playbackPosition="playbackPosition"
+        @updatePiece="updatePiece"
+        @sendToBench="sendToBench"
+        @playFromBench="playFromBench"
+        @notify="notify"
+        :gamePixelWidth="gamePixelWidth"
+      />
+      <Shop class="shop" :gameData="runningGameData" :player="player" @notify="notify" />
+      <transition name="notification">
+        <div class="notification" v-if="notification">{{notification}}</div>
+      </transition>
+    </template>
+    <GameOverView v-else :player="player" @newGame="resetEntireGame" />
   </main>
 </template>
 
 <script>
 import GameView from '~/components/GameView.vue'
+import GameOverView from '~/components/GameOverView.vue'
 import UpgradeIcon from '~/components/UpgradeIcon'
 import playerCreator from '~/assets/gameEngine/player'
 import levels from '~/assets/levels'
 import Shop from '~/components/Shop'
 
+import firestore from '~/assets/firestore'
+
 export default {
   components: {
     GameView,
+    GameOverView,
     Shop,
     UpgradeIcon,
   },
   data() {
     return {
-      player: playerCreator({
-        isHuman: true,
-        color: 'black',
-        pieces: [
-          { type: 'king', color: 'black', x: 3, y: 5 },
-          { type: 'pawn', color: 'black', x: 0, y: 4 },
-        ],
-        bench: [],
-        gold: 3,
-        dimensions: { x: 6, y: 6 },
-      }),
+      view: 'game',
+      gamePixelWidth: 350,
+      player: this.getNewPlayer(),
       enemy: {},
       runningGameData: null,
       notification: ``,
@@ -72,9 +72,28 @@ export default {
     }
   },
   mounted() {
-    this.prepareNextRound()
+    this.resetEntireGame()
   },
   methods: {
+    getNewPlayer() {
+      return playerCreator({
+        isHuman: true,
+        color: 'black',
+        pieces: [
+          { type: 'king', color: 'black', x: 3, y: 7 },
+          { type: 'pawn', color: 'black', x: 0, y: 4 },
+        ],
+        bench: [],
+        gold: 3,
+        dimensions: { x: 8, y: 8 },
+      })
+    },
+    resetEntireGame() {
+      firestore.newGame()
+      this.player = this.getNewPlayer()
+      this.prepareNextRound()
+      this.view = 'game'
+    },
     prepareNextRound() {
       this.runningGameData = null
       this.player.onGameReset()
@@ -92,9 +111,13 @@ export default {
       if (didWin === false) this.player.takeDamage(1)
       // todo adjust damage based on pieces?
       if (this.player.hp <= 0) {
-        alert('game over!')
-        // todo reset game
-        // todo make leaderboards
+        if (firestore.gameEnd(this.player)) {
+          // is high score
+          const name = prompt('High score! Enter your name.')
+          this.player.name = name
+          firestore.addHighScore(this.player)
+        }
+        this.view = 'gameover'
       }
     },
     newGame() {
@@ -133,7 +156,6 @@ export default {
 main {
   user-select: none;
   position: relative;
-  width: 300px;
   height: 100%;
   display: flex;
   margin: 0 auto;

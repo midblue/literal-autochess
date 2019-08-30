@@ -23,13 +23,14 @@
       <div class="winbanner" :class="{fade: fadeSlider}" v-if="winner">
         <div>
           <h3>{{winner === 'black' ? 'You win!': winner === 'stalemate' ? `It's a draw!` : 'You lost.'}}</h3>
-          <div
-            v-if="player.previousWinnings.winGold"
-            class="sub"
-          >You get {{player.previousWinnings.winGold}} gold for {{winner === 'black' ? 'winning' : 'playing' }}{{player.previousWinnings.interestGold ? `, and ${player.previousWinnings.interestGold} gold as interest.` : '.' }}</div>
-          <div class="sub2" v-if="winner === 'black'">
+          <div v-if="player.previousWinnings.winGold" class="sub">
+            You get
+            <b>{{player.previousWinnings.winGold}} gold</b>
+            for {{winner === 'black' ? 'winning' : 'playing' }}{{player.previousWinnings.interestGold ? `, and ${player.previousWinnings.interestGold} gold as interest.` : '.' }}
+          </div>
+          <div class="sub" v-if="winner === 'black' && levelRatio < 100">
             Only
-            <b>14%</b> of players make it this far.
+            <b>{{levelRatio}}%</b> of players make it this far.
           </div>
         </div>
         <input
@@ -135,6 +136,7 @@
 import Piece from '~/components/Piece'
 import MovablePiece from '~/components/MovablePiece'
 import Stats from '~/components/Stats'
+import firestore from '~/assets/firestore'
 
 export default {
   components: { Piece, MovablePiece, Stats },
@@ -149,12 +151,13 @@ export default {
     },
     player: {},
     enemy: {},
+    gamePixelWidth: {},
   },
   data() {
     return {
       autoSpeed: 250,
       currentSpeed: 1,
-      columnWidth: 50,
+      columnWidth: this.gamePixelWidth / this.player.dimensions.x,
       playbackPosition: -1,
       activePopovers: [],
       winner: null,
@@ -164,6 +167,7 @@ export default {
       damageId: null,
       fadeSlider: false,
       draggingPiece: false,
+      levelRatio: 100,
     }
   },
   computed: {
@@ -172,13 +176,21 @@ export default {
       return JSON.parse(this.gameData[this.playbackPosition].gameState)
     },
     currentEvent() {
-      if (!this.gameData || !this.gameData.length) return
+      if (
+        !this.gameData ||
+        !this.gameData.length ||
+        !this.gameData[this.playbackPosition]
+      )
+        return
       let newEvent = JSON.parse(this.gameData[this.playbackPosition].event)
       if (!Object.keys(newEvent).length) return
       return newEvent
     },
   },
   watch: {
+    winner() {
+      this.levelRatio = parseInt(firestore.levelRatio(this.player.level) * 100)
+    },
     gameData() {
       this.playbackPosition = -1
       this.winner = null
@@ -238,7 +250,7 @@ export default {
               ((this.playbackPosition / this.gameData.length) * 0.8)
           : this.autoSpeed +
             this.autoSpeed *
-              ((this.playbackPosition / this.gameData.length) * 1)
+              ((this.playbackPosition / this.gameData.length) * 0.8)
 
       setTimeout(this.advance, this.currentSpeed)
       if (this.playbackPosition < this.gameData.length - 1) {

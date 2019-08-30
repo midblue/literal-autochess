@@ -110,7 +110,7 @@ export default {
 }
 .dragging {
   position: absolute;
-  z-index: 4;
+  z-index: 5;
   transform: scale(1.3, 1.3);
   box-shadow: 0 10px 10px var(--bg-shade3);
   background: var(--bg-overlay);

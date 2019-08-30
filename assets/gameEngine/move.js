@@ -20,6 +20,7 @@ export default function(board, isNewGame) {
     if (!piecesToMove.length) continue
     const piece = piecesToMove.pop()
     if (!piece || piece.hp < 1) continue
+    // todo sometimes 0 hp pieces get in anyway
     if (piece.id === lastMoveId) {
       piecesToMove.unshift(piece)
       // console.log(
@@ -81,7 +82,7 @@ function getPiecesToMove(board) {
 }
 
 function selectAction(actions) {
-  if (!actions || !actions.length) return console.log('no action to choose!')
+  if (!actions || !actions.length) return
   let selected = null,
     keepTrying,
     selectCutoff
@@ -141,8 +142,9 @@ function takeAction(piece, board) {
   let event
 
   if (!selected) {
+    // console.log(piece.name(), board.stepCount, moves, attacks)
     return false
-    // no move
+    // no moves available
   } else if (selected.type === 'attack') {
     event = {
       type: selected.pieceToAttack.hp - piece.damage <= 0 ? 'kill' : 'damage',

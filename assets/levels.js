@@ -10,9 +10,10 @@ export default function(levelNum, dimensions) {
   if (levelNum > 5) pieces.push({ type: 'pawn', x: halfway - 1, y: 1 })
 
   // * buy system
-  let gold = levelNum * 3
+  let gold = levelNum * 4
   while (gold >= prices.pieces.pawn) {
-    const type = pool.pieces[Math.floor(Math.random() * pool.pieces.length)]
+    const type =
+      pool.flatPieces[Math.floor(Math.random() * pool.flatPieces.length)]
     if (gold < prices.pieces[type]) continue
     gold -= prices.pieces[type]
     let x = Math.floor(Math.random() * dimensions.x)
@@ -26,7 +27,7 @@ export default function(levelNum, dimensions) {
 
   // * levelNum of random pieces
   // for (let i = 1; i < levelNum; i++) {
-  //   let type = pool.pieces[Math.floor(Math.random() * pool.pieces.length)]
+  //   let type = pool.flatPieces[Math.floor(Math.random() * pool.flatPieces.length)]
   //   let x = Math.floor(Math.random() * dimensions.x)
   //   let y = Math.floor(Math.random() * Math.floor(dimensions.y / 2))
   //   while (pieces.find(p => p.x === x && p.y === y) && pieces.length < 32) {

@@ -41,9 +41,8 @@ export default {
   --endspeed: 0.3s;
   --startspeed: 0.15s;
   position: relative;
-  width: 50px;
-  height: 50px;
-  max-width: 50px;
+  width: 100%;
+  height: 100%;
   z-index: 1;
   display: flex;
   align-items: center;

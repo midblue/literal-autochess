@@ -1,5 +1,12 @@
+require('dotenv').config()
+
 export default {
   mode: 'spa',
+  env: {
+    FIREBASE_APIKEY: process.env.FIREBASE_APIKEY,
+    FIREBASE_AUTHDOMAIN: process.env.FIREBASE_AUTHDOMAIN,
+    FIREBASE_PROJECTID: process.env.FIREBASE_PROJECTID,
+  },
   head: {
     title: process.env.npm_package_name || '',
     meta: [
@@ -11,7 +18,8 @@ export default {
         content: process.env.npm_package_description || '',
       },
     ],
-    link: [{ rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }],
+    // link: [{ rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }],
+    script: [],
   },
 
   loading: { color: '#fff' },
