@@ -1,7 +1,7 @@
 {
   "name": "autochess",
   "version": "1.0.0",
-  "description": "asdf",
+  "description": "Auto Chess. Literally.",
   "author": "Jasper Stephenson",
   "private": true,
   "scripts": {

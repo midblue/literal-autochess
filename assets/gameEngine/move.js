@@ -20,7 +20,6 @@ export default function(board, isNewGame) {
     if (!piecesToMove.length) continue
     const piece = piecesToMove.pop()
     if (!piece || piece.hp < 1) continue
-    // todo sometimes 0 hp pieces get in anyway
     if (piece.id === lastMoveId) {
       piecesToMove.unshift(piece)
       // console.log(
@@ -110,12 +109,15 @@ function selectAction(actions) {
   //   keepTrying--
   // }
   // * v2
-  selectCutoff = Math.random() * 2.5
-  // console.log(selectCutoff)
-  const shuffledActions = shuffleArray(actions)
-  while (!selected) {
-    selected = shuffledActions.find(a => a.rating.value > selectCutoff)
-    selectCutoff -= 0.2
+  selected = actions.find(a => a.rating.value > 80) // always take king killer
+  if (!selected) {
+    selectCutoff = Math.random() * 2.5
+    // console.log(selectCutoff)
+    const shuffledActions = shuffleArray(actions)
+    while (!selected) {
+      selected = shuffledActions.find(a => a.rating.value > selectCutoff)
+      selectCutoff -= 0.2
+    }
   }
 
   if (!selected) selected = actions[Math.floor(Math.random() * actions.length)]

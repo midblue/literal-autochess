@@ -104,14 +104,14 @@ export default {
     playbackPosition(newPosition) {
       this.turn = newPosition
     },
-    playbackFinished(didWin) {
+    async playbackFinished(didWin) {
       this.player.resetPreviousGold()
       if (didWin === true) this.player.levelUp()
       if (didWin !== undefined) this.player.addGold(didWin)
       if (didWin === false) this.player.takeDamage(1)
       // todo adjust damage based on pieces?
       if (this.player.hp <= 0) {
-        if (firestore.gameEnd(this.player)) {
+        if (await firestore.gameEnd(this.player)) {
           // is high score
           const name = prompt('High score! Enter your name.')
           this.player.name = name
@@ -123,6 +123,7 @@ export default {
     newGame() {
       if (this.runningGameData) return
       this.runningGameData = this.player.playVs(this.enemy)
+      // todo sometimes getting free pieces on bench???
     },
     sendToBench(id) {
       const result = this.player.sendToBench(id)

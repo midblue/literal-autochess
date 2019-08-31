@@ -70,6 +70,7 @@ body {
   margin: 0;
   color: var(--text);
   background: var(--bg);
+  touch-action: none;
 
   & > *,
   &,
@@ -85,6 +86,7 @@ body {
 *:after {
   box-sizing: border-box;
   margin: 0;
+  // touch-action: none;
 }
 
 input,

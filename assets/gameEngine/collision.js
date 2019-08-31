@@ -1,4 +1,5 @@
 import pieces from './pieces'
+import prices from './../pieceManagement/prices'
 
 function elementAt(x, y, board) {
   if (x >= board.dimensions.x || x < 0 || y >= board.dimensions.y || y < 0) {
@@ -71,7 +72,8 @@ function getSpaceRating(color, type, x, y, board, fromX, fromY) {
   // console.log('getting rating', color, type, x, y)
   let willHitBonus = 0,
     dangerMinus = 0,
-    nextTurnBonus = 0
+    nextTurnBonus = 0,
+    hitType
 
   // will hit enemy
   const elementAtSpace = elementAt(x, y, board)
@@ -79,20 +81,19 @@ function getSpaceRating(color, type, x, y, board, fromX, fromY) {
     elementAtSpace.color &&
     elementAtSpace.color === (color === 'black' ? 'white' : 'black')
   ) {
-    if (['pawn'].includes(elementAtSpace.type)) willHitBonus = 0.4
-    else if (['rook', 'knight', 'bishop'].includes(elementAtSpace.type))
-      willHitBonus = 0.5
-    else if (['queen'].includes(elementAtSpace.type)) willHitBonus = 0.6
-    else if (['king'].includes(elementAtSpace.type)) willHitBonus = 100
+    hitType = elementAtSpace.type
+    if (['pawn'].includes(hitType)) willHitBonus = 0.4
+    else if (['rook', 'knight', 'bishop'].includes(hitType)) willHitBonus = 0.5
+    else if (['queen'].includes(hitType)) willHitBonus = 0.6
+    else if (['king'].includes(hitType)) willHitBonus = 100
     // console.log('willHitBonus')
   }
 
   // can be hit
   const danger = isInDangerFrom(color, x, y, board, fromX, fromY)
   if (danger.length) {
-    dangerMinus = danger.length * 0.7
-    // if (type === 'king') dangerMinus *= 2
-    // console.log('dangerMinus')
+    if (!hitType || prices.pieces[type] > prices.pieces[hitType])
+      dangerMinus = danger.length * 0.7
   }
 
   // can hit next turn

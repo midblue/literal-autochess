@@ -1,11 +1,11 @@
 const pieces = {
   rook: 8,
 
-  bishop: 8,
+  bishop: 7,
 
-  knight: 8,
+  knight: 6,
 
-  queen: 15,
+  queen: 14,
 
   king: 15,
 

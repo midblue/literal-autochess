@@ -51,26 +51,29 @@ export default {
       e.preventDefault()
       this.dragging = true
       this.$emit('startdrag')
-      window.addEventListener('mouseup', this.dragEnd)
-      window.addEventListener('mousemove', this.dragMove)
-      window.addEventListener('touchend', this.dragEnd)
-      window.addEventListener('touchmove', this.dragMove)
-      this.startY = e.clientY || e.pageY
-      this.startX = e.clientX || e.pageX
+      window.addEventListener('mouseup', this.dragEnd, { passive: false })
+      window.addEventListener('mousemove', this.dragMove, { passive: false })
+      window.addEventListener('touchend', this.dragEnd, { passive: false })
+      window.addEventListener('touchcancel', this.dragEnd, { passive: false })
+      window.addEventListener('touchmove', this.dragMove, { passive: false })
+      this.startY = e.clientY || e.pageY || e.touches[0].clientY
+      this.startX = e.clientX || e.pageX || e.touches[0].clientX
       this.dragY = 0
       this.dragX = 0
     },
     dragMove(e) {
       e.preventDefault()
-      this.dragY = (e.clientY || e.pageY) - this.startY
-      this.dragX = (e.clientX || e.pageX) - this.startX
+      this.dragY = (e.clientY || e.pageY || e.touches[0].clientY) - this.startY
+      this.dragX = (e.clientX || e.pageX || e.touches[0].clientX) - this.startX
     },
     dragEnd(e) {
       e.preventDefault()
+      // console.log(e)
       this.dragging = false
       window.removeEventListener('mouseup', this.dragEnd)
       window.removeEventListener('mousemove', this.dragMove)
       window.removeEventListener('touchend', this.dragEnd)
+      window.removeEventListener('touchcancel', this.dragEnd)
       window.removeEventListener('touchmove', this.dragMove)
       this.mouseUpListener = null
       this.mouseMoveListener = null
@@ -81,10 +84,12 @@ export default {
         boardWidth = boardPosition.width,
         boardHeight = boardPosition.height
 
-      let newXPercent = ((e.clientX || e.pageX) - boardLeft) / boardWidth
-      let newYPercent = ((e.clientY || e.pageY) - boardTop) / boardHeight
+      let x = e.clientX || e.pageX || e.changedTouches[0].clientX,
+        y = e.clientY || e.pageY || e.changedTouches[0].clientY,
+        newXPercent = (x - boardLeft) / boardWidth,
+        newYPercent = (y - boardTop) / boardHeight
 
-      // console.log(newXPercent, newYPercent)
+      // console.log(x, y, boardPosition, newXPercent, newYPercent)
 
       this.$emit('enddrag', {
         x: newXPercent,

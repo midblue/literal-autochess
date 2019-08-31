@@ -20,7 +20,7 @@
         :playbackPosition="playbackPosition"
         :currentEvent="currentEvent"
       />
-      <div class="winbanner" :class="{fade: fadeSlider}" v-if="winner">
+      <div class="winbanner" :class="{fade: isScrubbing}" v-if="winner">
         <div>
           <h3>{{winner === 'black' ? 'You win!': winner === 'stalemate' ? `It's a draw!` : 'You lost.'}}</h3>
           <div v-if="player.previousWinnings.winGold" class="sub">
@@ -39,8 +39,11 @@
           v-model="playbackPosition"
           min="0"
           :max="gameData.length - 1"
-          @mousedown="fadeSlider = true"
-          @mouseup="fadeSlider = false"
+          @mousedown="isScrubbing = true"
+          @mouseup="isScrubbing = false"
+          @touchstart="isScrubbing = true"
+          @touchend="isScrubbing = false"
+          @touchcancel="isScrubbing = false"
         />
         <button @click="$emit('next')">{{winner === 'black' ? 'Next Level': 'Try Again'}}</button>
       </div>
@@ -165,7 +168,7 @@ export default {
       autoInterval: null,
       movingId: null,
       damageId: null,
-      fadeSlider: false,
+      isScrubbing: false,
       draggingPiece: false,
       levelRatio: 100,
     }
@@ -188,8 +191,10 @@ export default {
     },
   },
   watch: {
-    winner() {
-      this.levelRatio = parseInt(firestore.levelRatio(this.player.level) * 100)
+    async winner() {
+      this.levelRatio = parseInt(
+        (await firestore.levelRatio(this.player.level)) * 100
+      )
     },
     gameData() {
       this.playbackPosition = -1
@@ -247,7 +252,7 @@ export default {
         'stalemate'
           ? this.autoSpeed -
             this.autoSpeed *
-              ((this.playbackPosition / this.gameData.length) * 0.8)
+              ((this.playbackPosition / this.gameData.length) * 0.9)
           : this.autoSpeed +
             this.autoSpeed *
               ((this.playbackPosition / this.gameData.length) * 0.8)

@@ -13,57 +13,45 @@ if (!firebase) {
   db = firebase.firestore()
 }
 
-let highScores = [],
-  gamesCompleted = 0,
-  gamesPlayed = 0,
-  levelCounts = []
+let highScores, gamesCompleted, gamesPlayed, levelCounts
 
 const statsCollection = db.collection('stats')
-statsCollection
-  .doc('totals')
-  .get()
-  .then(doc => {
-    // console.log(doc.data())
-    gamesCompleted = doc.data().gamesCompleted
-    gamesPlayed = doc.data().gamesPlayed + 1
-  })
-statsCollection
-  .doc('levelCounts')
-  .get()
-  .then(doc => {
-    // console.log(doc.data())
-    levelCounts = doc.data()
-  })
-statsCollection
-  .doc('highScores')
-  .get()
-  .then(doc => {
-    // console.log(JSON.stringify(doc.data().list))
-    highScores = doc.data().list
-  })
-// todo make a single call?
 
 export default {
-  getHighScores() {
+  async getHighScores() {
+    if (!highScores) await getHighScores()
     return highScores
   },
-  getGamesCompleted() {
+
+  async getGamesCompleted() {
+    if (!gamesCompleted) await getGameStats()
     return gamesCompleted
   },
-  getGamesPlayed() {
+
+  async getGamesPlayed() {
+    if (!gamesPlayed) await getGameStats()
     return gamesPlayed
   },
-  getLevelCounts() {
+
+  async getLevelCounts() {
+    if (!levelCounts) await getLevelCounts()
     return levelCounts
   },
-  gameEnd(player) {
-    return addGameCompleted(player)
+
+  async gameEnd(player) {
+    return await addGameCompleted(player)
   },
+
   addHighScore,
+
   newGame() {
     addGameStarted()
   },
-  levelRatio(level) {
+
+  async levelRatio(level) {
+    if (!levelCounts) await getLevelCounts()
+    if (!gamesCompleted) await getGameStats()
+
     let total = 0
     while (level < 1000) {
       total += levelCounts[level] || 0
@@ -73,19 +61,55 @@ export default {
   },
 }
 
+function getGameStats() {
+  if (gamesCompleted) return
+  return statsCollection
+    .doc('totals')
+    .get()
+    .then(doc => {
+      // console.log(doc.data())
+      gamesCompleted = doc.data().gamesCompleted
+      gamesPlayed = doc.data().gamesPlayed
+    })
+}
+
+function getHighScores() {
+  if (highScores) return
+  return statsCollection
+    .doc('highScores')
+    .get()
+    .then(doc => {
+      // console.log(doc.data())
+      highScores = doc.data().list
+    })
+}
+
+function getLevelCounts() {
+  if (levelCounts) return
+  statsCollection
+    .doc('levelCounts')
+    .get()
+    .then(doc => {
+      // console.log(doc.data())
+      levelCounts = doc.data()
+    })
+}
+
 function addGameStarted() {
   statsCollection
     .doc('totals')
     .update({ gamesPlayed: firebase.firestore.FieldValue.increment(1) })
 }
 
-function addGameCompleted(player) {
+async function addGameCompleted(player) {
   statsCollection
     .doc('totals')
     .update({ gamesCompleted: firebase.firestore.FieldValue.increment(1) })
   statsCollection
     .doc('levelCounts')
     .update({ [player.level]: firebase.firestore.FieldValue.increment(1) })
+
+  if (!highScores) await getHighScores()
 
   const foundLowerHighScore = highScores.find(hs => hs.level <= player.level)
   if (highScores.length < 10 || foundLowerHighScore !== undefined) {
@@ -102,7 +126,7 @@ function addHighScore({ level, name }) {
     return alert('Nope! No names like that, please!')
   const foundLowerHighScore = !!highScores.find(hs => hs.level <= level)
   if (foundLowerHighScore && highScores.length >= 10) highScores.pop()
-  highScores.push({ level, name })
+  highScores.push({ level, name: name.substring(0, 14) })
   highScores = highScores.sort((a, b) => b.level - a.level)
   statsCollection.doc('highScores').update({ list: highScores })
   return highScores
