@@ -41,7 +41,7 @@ export default {
     }
   },
   computed: {},
-  async mounted() {
+  async created() {
     this.highScores = await firestore.getHighScores()
   },
   methods: {},

@@ -19,22 +19,22 @@ const statsCollection = db.collection('stats')
 
 export default {
   async getHighScores() {
-    if (!highScores) await getHighScores()
+    if (!highScores) await getHighScoresFromServer()
     return highScores
   },
 
   async getGamesCompleted() {
-    if (!gamesCompleted) await getGameStats()
+    if (!gamesCompleted) await getGameStatsFromServer()
     return gamesCompleted
   },
 
   async getGamesPlayed() {
-    if (!gamesPlayed) await getGameStats()
+    if (!gamesPlayed) await getGameStatsFromServer()
     return gamesPlayed
   },
 
   async getLevelCounts() {
-    if (!levelCounts) await getLevelCounts()
+    if (!levelCounts) await getLevelCountsFromServer()
     return levelCounts
   },
 
@@ -49,8 +49,8 @@ export default {
   },
 
   async levelRatio(level) {
-    if (!levelCounts) await getLevelCounts()
-    if (!gamesCompleted) await getGameStats()
+    if (!levelCounts) await getLevelCountsFromServer()
+    if (!gamesCompleted) await getGameStatsFromServer()
 
     let total = 0
     while (level < 1000) {
@@ -61,7 +61,7 @@ export default {
   },
 }
 
-function getGameStats() {
+function getGameStatsFromServer() {
   if (gamesCompleted) return
   return statsCollection
     .doc('totals')
@@ -73,7 +73,7 @@ function getGameStats() {
     })
 }
 
-function getHighScores() {
+function getHighScoresFromServer() {
   if (highScores) return
   return statsCollection
     .doc('highScores')
@@ -84,7 +84,7 @@ function getHighScores() {
     })
 }
 
-function getLevelCounts() {
+function getLevelCountsFromServer() {
   if (levelCounts) return
   statsCollection
     .doc('levelCounts')
@@ -109,7 +109,7 @@ async function addGameCompleted(player) {
     .doc('levelCounts')
     .update({ [player.level]: firebase.firestore.FieldValue.increment(1) })
 
-  if (!highScores) await getHighScores()
+  if (!highScores) await getHighScoresFromServer()
 
   const foundLowerHighScore = highScores.find(hs => hs.level <= player.level)
   if (highScores.length < 10 || foundLowerHighScore !== undefined) {
@@ -124,6 +124,7 @@ function addHighScore({ level, name }) {
     )
   )
     return alert('Nope! No names like that, please!')
+  if (!name) name = 'No Name'
   const foundLowerHighScore = !!highScores.find(hs => hs.level <= level)
   if (foundLowerHighScore && highScores.length >= 10) highScores.pop()
   highScores.push({ level, name: name.substring(0, 14) })

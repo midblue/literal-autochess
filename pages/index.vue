@@ -94,7 +94,18 @@ export default {
       this.prepareNextRound()
       this.view = 'game'
     },
-    prepareNextRound() {
+    async prepareNextRound() {
+      if (this.player.hp <= 0) {
+        if (await firestore.gameEnd(this.player)) {
+          // is high score
+          const name = prompt('High score! Enter your name.')
+          this.player.name = name
+          firestore.addHighScore(this.player)
+        }
+        this.view = 'gameover'
+        return
+      }
+
       this.runningGameData = null
       this.player.onGameReset()
       this.enemy = playerCreator({
@@ -104,21 +115,12 @@ export default {
     playbackPosition(newPosition) {
       this.turn = newPosition
     },
-    async playbackFinished(didWin) {
+    playbackFinished(didWin) {
       this.player.resetPreviousGold()
       if (didWin === true) this.player.levelUp()
       if (didWin !== undefined) this.player.addGold(didWin)
       if (didWin === false) this.player.takeDamage(1)
       // todo adjust damage based on pieces?
-      if (this.player.hp <= 0) {
-        if (await firestore.gameEnd(this.player)) {
-          // is high score
-          const name = prompt('High score! Enter your name.')
-          this.player.name = name
-          firestore.addHighScore(this.player)
-        }
-        this.view = 'gameover'
-      }
     },
     newGame() {
       if (this.runningGameData) return

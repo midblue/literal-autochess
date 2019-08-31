@@ -48,6 +48,7 @@ export default function(board, isNewGame) {
 
 function getPiecesToMove(board) {
   const movablePieces = board.pieces.filter(p => p.hp > 0)
+
   // * every piece moves in order before restarting
   // piecesToMove = [...movablePieces]
 
@@ -60,6 +61,7 @@ function getPiecesToMove(board) {
   //   movablePieces[Math.floor(Math.random() * movablePieces.length)],
   // ]
 
+  // * (outdated) moves pieces by priority, randomly
   // piecesToMove = piecesToMove.concat(
   //   shuffleArray([...movablePieces])
   // )
@@ -95,20 +97,6 @@ function selectAction(actions) {
   // selected = null
 
   // * give some degree of randomness, but prioritize good moves
-  // let selectCutoff = Math.random() + .2
-  // keepTrying = actions.length * 3
-  // while (!selected && keepTrying) {
-  //   selected = actions[Math.floor(Math.random() * actions.length)]
-  //   // console.log(selected.rating, selectCutoff, actions.length)
-  //   if (!selected.rating) {
-  //     console.log('no rating!', selected)
-  //     break
-  //   }
-  //   if (selected.rating.value < selectCutoff) selected = null
-  //   selectCutoff -= 0.1
-  //   keepTrying--
-  // }
-  // * v2
   selected = actions.find(a => a.rating.value > 80) // always take king killer
   if (!selected) {
     selectCutoff = Math.random() * 2.5

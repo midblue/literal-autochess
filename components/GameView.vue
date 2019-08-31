@@ -23,11 +23,13 @@
       <div class="winbanner" :class="{fade: isScrubbing}" v-if="winner">
         <div>
           <h3>{{winner === 'black' ? 'You win!': winner === 'stalemate' ? `It's a draw!` : 'You lost.'}}</h3>
-          <div v-if="player.previousWinnings.winGold" class="sub">
-            You get
-            <b>{{player.previousWinnings.winGold}} gold</b>
-            for {{winner === 'black' ? 'winning' : 'playing' }}{{player.previousWinnings.interestGold ? `, and ${player.previousWinnings.interestGold} gold as interest.` : '.' }}
-          </div>
+          <template v-if="player.hp > 0">
+            <div v-if="player.previousWinnings.winGold" class="sub">
+              You get
+              <b>{{player.previousWinnings.winGold}} gold</b>
+              for {{winner === 'black' ? 'winning' : 'playing' }}{{player.previousWinnings.interestGold ? `, and ${player.previousWinnings.interestGold} gold as interest.` : '.' }}
+            </div>
+          </template>
           <div class="sub" v-if="winner === 'black' && levelRatio < 100">
             Only
             <b>{{levelRatio}}%</b> of players make it this far.
@@ -45,7 +47,13 @@
           @touchend="isScrubbing = false"
           @touchcancel="isScrubbing = false"
         />
-        <button @click="$emit('next')">{{winner === 'black' ? 'Next Level': 'Try Again'}}</button>
+        <button @click="$emit('next')">
+          {{player.hp > 0 ?
+          winner === 'black' ?
+          'Next Level':
+          'Try Again'
+          : 'See Scores'}}
+        </button>
       </div>
 
       <transition-group
@@ -246,14 +254,16 @@ export default {
   methods: {
     advance() {
       if (!this.gameData || this.winner) return
-      // gradually slow down)
       this.currentSpeed =
         JSON.parse(this.gameData[this.gameData.length - 1].event).type ===
         'stalemate'
-          ? this.autoSpeed -
+          ? //gradually speed up
+            this.autoSpeed * 0.6 -
             this.autoSpeed *
-              ((this.playbackPosition / this.gameData.length) * 0.9)
-          : this.autoSpeed +
+              0.6 *
+              ((this.playbackPosition / this.gameData.length) * 0.65)
+          : //gradually slow down
+            this.autoSpeed +
             this.autoSpeed *
               ((this.playbackPosition / this.gameData.length) * 0.8)
 
