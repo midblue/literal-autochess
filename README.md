@@ -1,4 +1,4 @@
-# literal-autochess
+# Literal Auto Chess
 ♟️Auto chess, [literally](https://www.jasperstephenson.com/autochess/).
 
 ![Screenshot](https://www.jasperstephenson.com/autochess/screenshot.png)
