@@ -1,49 +1,43 @@
 import collision from './collision'
 const validActions = collision.validActions
 
-let piecesToMove = []
-let lastMoveId = ''
-// let turn = Math.random() > 0.5 ? 'white' : 'black'
+// let piecesToMove = []
+// let lastMoveId = ''
+let turn = 'white'
 
 export default function(board, isNewGame) {
-  if (isNewGame) {
-    piecesToMove = []
-    lastMoveId = ''
-  }
-  let turnAction = null
-  while (!turnAction) {
-    if (!piecesToMove.length) getPiecesToMove(board)
-    if (piecesToMove.length === 1 && piecesToMove[0].id === lastMoveId) {
-      getPiecesToMove(board)
-      // console.log('resetting list')
-    }
-    if (!piecesToMove.length) continue
-    const piece = piecesToMove.pop()
-    if (!piece || piece.hp < 1) continue
-    if (piece.id === lastMoveId) {
-      piecesToMove.unshift(piece)
-      // console.log(
-      //   'shifting list',
-      //   piecesToMove.map(p => p.color + ' ' + p.type)
-      // )
-      continue
-    }
-    // todo still sometimes double moving
-    lastMoveId = piece.id
-    // console.log(piece.color + ' ' + piece.type)
-    turnAction = takeAction(piece, board)
-  }
-  return turnAction
-
-  //   let turnAction = null
-  //   while (!turnAction) turnAction = takeAction(getRandomPiece(turn, board), board)
-  //   turn = turn === 'white' ? 'black' : 'white'
-  //   return turnAction
+  // if (isNewGame) {
+  //   piecesToMove = []
+  //   lastMoveId = ''
   // }
+  // let turnAction = null
+  // while (!turnAction) {
+  //   if (!piecesToMove.length) getPiecesToMove(board)
+  //   if (piecesToMove.length === 1 && piecesToMove[0].id === lastMoveId) {
+  //     getPiecesToMove(board)
+  //     // console.log('resetting list')
+  //   }
+  //   if (!piecesToMove.length) continue
+  //   const piece = piecesToMove.pop()
+  //   if (!piece || piece.hp < 1) continue
+  //   if (piece.id === lastMoveId) {
+  //     piecesToMove.unshift(piece)
+  //     // console.log(
+  //     //   'shifting list',
+  //     //   piecesToMove.map(p => p.color + ' ' + p.type)
+  //     // )
+  //     continue
+  //   }
+  //   // todo still sometimes double moving
+  //   lastMoveId = piece.id
+  //   // console.log(piece.color + ' ' + piece.type)
+  //   turnAction = takeAction(piece, board)
+  // }
+  // return turnAction
 
-  // function getRandomPiece(color, board) {
-  //   const colorPieces = board.pieces.filter(p => !color || p.color === color)
-  //   return colorPieces[Math.floor(Math.random() * colorPieces.length)]
+  const { action, piece } = getPieceAndAction(turn, board)
+  turn = turn === 'white' ? 'black' : 'white'
+  return takeAction(piece, board, action)
 }
 
 function getPiecesToMove(board) {
@@ -53,7 +47,7 @@ function getPiecesToMove(board) {
   // piecesToMove = [...movablePieces]
 
   // * every piece moves in a random order before restarting
-  piecesToMove = shuffleArray([...movablePieces])
+  // piecesToMove = shuffleArray([...movablePieces])
   // console.log('list to move', piecesToMove.map(p => p.color + ' ' + p.type))
 
   // * a random piece moves
@@ -61,25 +55,47 @@ function getPiecesToMove(board) {
   //   movablePieces[Math.floor(Math.random() * movablePieces.length)],
   // ]
 
-  // * (outdated) moves pieces by priority, randomly
-  // piecesToMove = piecesToMove.concat(
-  //   shuffleArray([...movablePieces])
-  // )
-  // return
+  // * the piece with the best reason to move moves
+
+  // * moves pieces by order of priority, randomly
   // const piecesByPriority = {}
-  // board.pieces.forEach(piece => {
+  // movablePieces.forEach(piece => {
   //   if (!Array.isArray(piecesByPriority[piece.movePriority]))
   //     piecesByPriority[piece.movePriority] = []
   //   piecesByPriority[piece.movePriority].push(piece)
   // })
 
   // Object.keys(piecesByPriority)
-  //   .sort((a, b) => a - b)
+  //   .sort((a, b) => b - a)
   //   .forEach(movePriority => {
   //     piecesToMove = piecesToMove.concat(
   //       shuffleArray(piecesByPriority[movePriority])
   //     )
   //   })
+}
+
+function getPieceAndAction(turn, board) {
+  const colorPieces = shuffleArray(board.pieces.filter(p => p.color === turn))
+  let piece,
+    bestAction = { rating: { value: -999 } }
+  for (let p of colorPieces) {
+    const { moves, attacks } = validActions(p, board, {
+      moves: true,
+      attacks: true,
+      ratings: true,
+    })
+    // console.log(
+    //   p.name(),
+    //   [...moves, ...attacks].map(a => ({ r: a.rating.value, ...a }))
+    // )
+    for (let a of shuffleArray([...moves, ...attacks])) {
+      if (a.rating.value > bestAction.rating.value) {
+        bestAction = a
+        piece = p
+      }
+    }
+  }
+  return { piece, action: bestAction }
 }
 
 function selectAction(actions) {
@@ -97,9 +113,9 @@ function selectAction(actions) {
   // selected = null
 
   // * give some degree of randomness, but prioritize good moves
-  selected = actions.find(a => a.rating.value > 80) // always take king killer
+  selected = actions.find(a => a.rating.value > 1) // always take great attack
   if (!selected) {
-    selectCutoff = Math.random() * 2.5
+    selectCutoff = Math.random() * 2
     // console.log(selectCutoff)
     const shuffledActions = shuffleArray(actions)
     while (!selected) {
@@ -108,34 +124,44 @@ function selectAction(actions) {
     }
   }
 
+  // ---
+
   if (!selected) selected = actions[Math.floor(Math.random() * actions.length)]
-  // console.log(
-  //   'went with',
-  //   selected.rating.value,
-  //   selected,
-  //   // actions.map(a => ({ ...a, ratingNum: a.rating.value })),
-  //   'tries left:',
-  //   keepTrying ? keepTrying : 0,
-  //   selectCutoff ? selectCutoff : 0
-  // )
+  console.log(
+    'went with',
+    selected.rating.value,
+    selected,
+    // actions.map(a => ({ ...a, ratingNum: a.rating.value })),
+    keepTrying ? keepTrying : 0,
+    selectCutoff ? selectCutoff : 0
+  )
   return selected
 }
 
-function takeAction(piece, board) {
+function takeAction(piece, board, action) {
   if (!piece || board.gameOver || piece.hp < 1) return
-  const { moves, attacks } = validActions(piece, board, true)
-  // console.log(piece.name(), attacks, moves)
+  let event,
+    selected = action
 
-  const actionsPool = [...attacks, ...moves]
+  if (!action) {
+    const { moves, attacks } = validActions(piece, board, {
+      moves: true,
+      attacks: true,
+      ratings: true,
+    })
 
-  let selected = selectAction(actionsPool)
-  let event
+    const actionsPool = [...attacks, ...moves]
 
-  if (!selected) {
-    // console.log(piece.name(), board.stepCount, moves, attacks)
-    return false
-    // no moves available
-  } else if (selected.type === 'attack') {
+    selected = selectAction(actionsPool)
+    if (!selected) {
+      // console.log(piece.name(), board.stepCount, moves, attacks)
+      return false
+      // no moves available
+    }
+  }
+  console.log(piece.name(), 'went with', selected)
+
+  if (selected.type === 'attack') {
     event = {
       type: selected.pieceToAttack.hp - piece.damage <= 0 ? 'kill' : 'damage',
       amount: piece.damage,

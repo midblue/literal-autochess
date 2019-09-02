@@ -1,6 +1,6 @@
 <template>
-  <div class="shopholder" v-if="buyablePieces.length">
-    <div class="shop">
+  <div class="shopholder" v-if="buyablePieces.length" :class="{dragging}">
+    <div class="shop" v-if="!dragging">
       <div class="sectionlabel">Shop</div>
       <div
         v-for="item, index in buyablePieces"
@@ -20,7 +20,7 @@
         <div class="price">{{ item.price }}</div>
       </div>
     </div>
-    <div class="notification" v-if="notification">{{notification}}</div>
+    <div v-else class="sectionlabel">Drop here to sell ({{sellPrice}} gold)</div>
   </div>
 </template>
 
@@ -29,6 +29,8 @@ import Piece from '~/components/Piece'
 import UpgradeIcon from '~/components/UpgradeIcon'
 import prices from '~/assets/pieceManagement/prices'
 import pool from '~/assets/pieceManagement/buyPool'
+
+// todo allow drag-into-play to buy
 
 export default {
   components: { Piece, UpgradeIcon },
@@ -53,10 +55,17 @@ export default {
         })),
       ],
       buyablePieces: [],
-      notification: '',
     }
   },
-  computed: {},
+  computed: {
+    dragging() {
+      return this.$store.state.draggingPiece
+    },
+    sellPrice() {
+      if (!this.dragging) return
+      return prices.sell[this.dragging.type]
+    },
+  },
   watch: {
     gameData(newData) {
       if (!newData) this.resetItems()
@@ -99,8 +108,18 @@ export default {
 <style lang="scss" scoped>
 .shopholder {
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+  height: 49px;
+
+  &.dragging {
+    background: var(--highlight-light);
+  }
 }
 .shop {
+  width: 100%;
   display: flex;
   align-items: center;
 

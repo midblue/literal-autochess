@@ -80,7 +80,7 @@ function getHighScoresFromServer() {
     .get()
     .then(doc => {
       // console.log(doc.data())
-      highScores = doc.data().list
+      highScores = doc.data().list.sort((a, b) => b.level - a.level)
     })
 }
 
@@ -117,7 +117,7 @@ async function addGameCompleted(player) {
   }
 }
 
-function addHighScore({ level, name }) {
+async function addHighScore({ level, name }) {
   if (
     /(nigger|fag|spic|wetback|towelhead|nigga|fuck|shit|cunt|cock|bitch)/gi.exec(
       name
@@ -125,6 +125,7 @@ function addHighScore({ level, name }) {
   )
     return alert('Nope! No names like that, please!')
   if (!name) name = 'No Name'
+  await getHighScoresFromServer() // always fetch latest scores so it doesn't overwrite
   const foundLowerHighScore = !!highScores.find(hs => hs.level <= level)
   if (foundLowerHighScore && highScores.length >= 10) highScores.pop()
   highScores.push({ level, name: name.substring(0, 14) })

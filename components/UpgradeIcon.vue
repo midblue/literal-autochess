@@ -49,5 +49,11 @@ export default {
     font-size: 1.2rem;
     content: '💰';
   }
+
+  &.piece:after {
+    top: 4px;
+    font-size: 1rem;
+    content: '♟️';
+  }
 }
 </style>

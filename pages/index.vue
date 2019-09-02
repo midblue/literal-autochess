@@ -19,6 +19,12 @@
             <b>{{player.gold}}</b>
           </span>
         </div>
+        <div>
+          <UpgradeIcon type="piece" />
+          <span style="position: relative; top: -5px; left: -5px;">
+            <b>{{player.pieceLimit}}</b>
+          </span>
+        </div>
       </div>
       <GameView
         :gameData="runningGameData"
@@ -31,10 +37,10 @@
         @updatePiece="updatePiece"
         @sendToBench="sendToBench"
         @playFromBench="playFromBench"
+        @sell="sell"
         @notify="notify"
         :gamePixelWidth="gamePixelWidth"
       />
-      <Shop class="shop" :gameData="runningGameData" :player="player" @notify="notify" />
       <transition name="notification">
         <div class="notification" v-if="notification">{{notification}}</div>
       </transition>
@@ -49,15 +55,12 @@ import GameOverView from '~/components/GameOverView.vue'
 import UpgradeIcon from '~/components/UpgradeIcon'
 import playerCreator from '~/assets/gameEngine/player'
 import levels from '~/assets/levels'
-import Shop from '~/components/Shop'
-
 import firestore from '~/assets/firestore'
 
 export default {
   components: {
     GameView,
     GameOverView,
-    Shop,
     UpgradeIcon,
   },
   data() {
@@ -100,7 +103,7 @@ export default {
           // is high score
           const name = prompt('High score! Enter your name.')
           this.player.name = name
-          firestore.addHighScore(this.player)
+          await firestore.addHighScore(this.player)
         }
         this.view = 'gameover'
         return
@@ -132,20 +135,39 @@ export default {
       if (!result.error) {
         this.$set(this.player, 'pieces', [...this.player.pieces])
         this.$set(this.player, 'bench', [...this.player.bench])
-      } else if (result.notify) this.notify(result.msg)
+      } else {
+        console.log(result.context)
+        if (result.notify) this.notify(result.msg)
+      }
     },
     playFromBench(props) {
       const result = this.player.playFromBench(props)
       if (!result.error) {
         this.$set(this.player, 'pieces', [...this.player.pieces])
         this.$set(this.player, 'bench', [...this.player.bench])
-      } else if (result.notify) this.notify(result.msg)
+      } else {
+        console.log(result.context)
+        if (result.notify) this.notify(result.msg)
+      }
     },
     updatePiece(updatedProps) {
       const result = this.player.updatePiece(updatedProps)
       if (!result.error)
         this.$set(this.player, 'pieces', [...this.player.pieces])
-      else if (result.notify) this.notify(result.msg)
+      else {
+        console.log(result.context)
+        if (result.notify) this.notify(result.msg)
+      }
+    },
+    sell({ id, type }) {
+      const result = this.player.sellPiece(id, type)
+      if (!result.error) {
+        this.notify(`Sold for ${result} gold.`)
+        this.$set(this.player, 'pieces', [...this.player.pieces])
+      } else {
+        console.log(result.context)
+        if (result.notify) this.notify(result.msg)
+      }
     },
     notify(notification) {
       this.notification = notification
@@ -204,12 +226,8 @@ main {
   justify-content: flex-start;
 
   & > *:not(:last-of-type) {
-    margin-right: 10px;
+    margin-right: 5px;
   }
-}
-
-.shop {
-  margin-top: 10px;
 }
 
 .notification {

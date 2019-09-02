@@ -36,16 +36,15 @@ export default {
       startX: 0,
       dragY: 0,
       dragX: 0,
-      boardEl: null,
-      benchEl: null,
     }
   },
   computed: {},
   watch: {},
   mounted() {
-    this.boardEl = this.$el.parentElement.parentElement.querySelector('.board')
-    this.benchEl = this.$el.parentElement.parentElement.querySelector('.bench')
+    // this.boardEl = this.$el.parentElement.parentElement.querySelector('.board')
+    // this.benchEl = this.$el.parentElement.parentElement.querySelector('.bench')
   },
+
   methods: {
     startDrag(e) {
       e.preventDefault()
@@ -60,11 +59,31 @@ export default {
       this.startX = e.clientX || e.pageX || e.touches[0].clientX
       this.dragY = 0
       this.dragX = 0
+
+      this.$store.commit('set', {
+        draggingPiece: {
+          type: this.type,
+          id: this.id,
+          bench: this.bench,
+          dragX: this.startX,
+          dragY: this.startY,
+        },
+      })
     },
     dragMove(e) {
       e.preventDefault()
       this.dragY = (e.clientY || e.pageY || e.touches[0].clientY) - this.startY
       this.dragX = (e.clientX || e.pageX || e.touches[0].clientX) - this.startX
+
+      this.$store.commit('set', {
+        draggingPiece: {
+          type: this.type,
+          id: this.id,
+          bench: this.bench,
+          dragX: e.clientX || e.pageX || e.touches[0].clientX,
+          dragY: e.clientY || e.pageY || e.touches[0].clientY,
+        },
+      })
     },
     dragEnd(e) {
       e.preventDefault()
@@ -78,25 +97,27 @@ export default {
       this.mouseUpListener = null
       this.mouseMoveListener = null
 
-      const boardPosition = this.boardEl.getBoundingClientRect()
-      const boardTop = boardPosition.top,
-        boardLeft = boardPosition.left,
-        boardWidth = boardPosition.width,
-        boardHeight = boardPosition.height
+      this.$store.commit('set', { draggingPiece: null })
 
-      let x = e.clientX || e.pageX || e.changedTouches[0].clientX,
-        y = e.clientY || e.pageY || e.changedTouches[0].clientY,
-        newXPercent = (x - boardLeft) / boardWidth,
-        newYPercent = (y - boardTop) / boardHeight
+      // const boardPosition = this.boardEl.getBoundingClientRect()
+      // const boardTop = boardPosition.top,
+      //   boardLeft = boardPosition.left,
+      //   boardWidth = boardPosition.width,
+      //   boardHeight = boardPosition.height
 
-      // console.log(x, y, boardPosition, newXPercent, newYPercent)
+      // let x = e.clientX || e.pageX || e.changedTouches[0].clientX,
+      //   y = e.clientY || e.pageY || e.changedTouches[0].clientY,
+      //   newXPercent = (x - boardLeft) / boardWidth,
+      //   newYPercent = (y - boardTop) / boardHeight
 
-      this.$emit('enddrag', {
-        x: newXPercent,
-        y: newYPercent,
-        id: this.id,
-        bench: this.bench,
-      })
+      // // console.log(x, y, boardPosition, newXPercent, newYPercent)
+
+      // this.$emit('enddrag', {
+      //   x: newXPercent,
+      //   y: newYPercent,
+      //   id: this.id,
+      //   bench: this.bench,
+      // })
 
       this.$nextTick(() => {
         this.dragY = 0

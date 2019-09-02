@@ -57,12 +57,12 @@ const rook = ({ color = 'white', x, y, bench = false }) => ({
   color,
   type: 'rook',
   indicator: 'r',
-  movePriority: 3,
+  movePriority: 5,
   hp: 1,
   baseHp: 1,
   damage: 1,
   movement: { direction: [0, 2, 4, 6], distance: Infinity },
-  attack: { direction: [0, 2, 4, 6], distance: Infinity },
+  attack: true, // same as movement
 })
 
 const bishop = ({ color = 'white', x, y, bench = false }) => ({
@@ -76,12 +76,12 @@ const bishop = ({ color = 'white', x, y, bench = false }) => ({
   color,
   type: 'bishop',
   indicator: 'b',
-  movePriority: 3,
+  movePriority: 4,
   hp: 1,
   baseHp: 1,
   damage: 1,
   movement: { direction: [1, 3, 5, 7], distance: Infinity },
-  attack: { direction: [1, 3, 5, 7], distance: Infinity },
+  attack: true, // same as movement
 })
 
 const knight = ({ color = 'white', x, y, bench = false }) => ({
@@ -117,7 +117,7 @@ const queen = ({ color = 'white', x, y, bench = false }) => ({
   baseHp: 1,
   damage: 1,
   movement: { direction: [0, 1, 2, 3, 4, 5, 6, 7], distance: Infinity },
-  attack: { direction: [0, 1, 2, 3, 4, 5, 6, 7], distance: Infinity },
+  attack: true, // same as movement
 })
 
 const king = ({ color = 'white', x, y, bench = false }) => ({
@@ -136,7 +136,7 @@ const king = ({ color = 'white', x, y, bench = false }) => ({
   baseHp: 1,
   damage: 1,
   movement: { direction: [0, 1, 2, 3, 4, 5, 6, 7], distance: 1 },
-  attack: { direction: [0, 1, 2, 3, 4, 5, 6, 7], distance: 1 },
+  attack: true, // same as movement
   onDamage({ damage, attacker }) {
     // if (this.hp <= 0)
     //   console.log(
@@ -177,6 +177,14 @@ const pawn = ({ color = 'white', x, y, bench = false }) => ({
   damage: 1,
   movement: { direction: color === 'white' ? [4] : [0], distance: 1 },
   attack: { direction: color === 'white' ? [3, 5] : [7, 1], distance: 1 },
+  vectorBonus(vector) {
+    if (
+      this.type === 'pawn' &&
+      (this.color === 'white' ? [3, 4, 5] : [7, 0, 1]).includes(vector)
+    )
+      return true
+    return false
+  },
   onMove({ position }) {
     if (position && (position.isTop || position.isBottom)) {
       const queenObj = queen({ color: this.color, x: this.x, y: this.y })

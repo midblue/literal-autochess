@@ -1,7 +1,6 @@
 <template>
   <div class="gameview">
     <span
-      ref="board"
       class="board outlines"
       :style="{
       'grid-template-columns': `repeat(${dimensions.x}, ${columnWidth}px)`, 
@@ -21,95 +20,61 @@
         :playbackPosition="playbackPosition"
         :currentEvent="currentEvent"
       />
-
-      <WinBanner
-        v-if="winner"
-        :winner="winner"
-        :player="player"
-        :gameData="gameData"
-        @playbackPosition="setPlaybackPosition"
-        @next="$emit('next')"
-      />
-
-      <transition-group
-        class="board"
-        name="grid"
-        :style="{
-          'grid-template-columns': `repeat(${dimensions.x}, ${columnWidth}px)`, 
-          'grid-template-rows': `repeat(${dimensions.y}, ${columnWidth}px)`,
-        }"
-      >
-        <Piece
-          v-for="piece, index in currentGameState"
-          :key="piece.id"
-          :x="piece.x"
-          :y="piece.y"
-          :indicator="piece.indicator"
-          :type="piece.type"
-          :color="piece.color"
-          :id="piece.id"
-          :moving="movingId === piece.id"
-          :damage="damageId === piece.id"
+      <div class="winbanner" :class="{fade: isScrubbing}" v-if="winner">
+        <div>
+          <h3>{{winner === 'black' ? 'You win!': winner === 'stalemate' ? `It's a draw!` : 'You lost.'}}</h3>
+          <template v-if="player.hp > 0">
+            <div v-if="player.previousWinnings.winGold" class="sub">
+              You get
+              <b>{{player.previousWinnings.winGold}} gold</b>
+              for {{winner === 'black' ? 'winning' : 'playing' }}{{player.previousWinnings.interestGold ? `, and ${player.previousWinnings.interestGold} gold as interest.` : '.' }}
+            </div>
+          </template>
+          <div class="sub" v-if="winner === 'black' && levelRatio < 100">
+            Only
+            <b>{{levelRatio}}%</b> of players make it this far.
+          </div>
+        </div>
+        <input
+          class="scrubber"
+          type="range"
+          v-model="playbackPosition"
+          min="0"
+          :max="gameData.length - 1"
+          @mousedown="isScrubbing = true"
+          @mouseup="isScrubbing = false"
+          @touchstart="isScrubbing = true"
+          @touchend="isScrubbing = false"
+          @touchcancel="isScrubbing = false"
         />
-      </transition-group>
+        <button @click="$emit('next')">
+          {{player.hp > 0 ?
+          winner === 'black' ?
+          'Next Level':
+          'Try Again'
+          : 'See Scores'}}
+        </button>
+      </div>
 
-      <div
-        v-for="popover in activePopovers"
-        :key="popover.id"
-        class="eventpopover"
-        :style="{top: popover.y * (100/dimensions.y) + (50/dimensions.y) + '%', left:popover.x * (100/dimensions.x) + (50/dimensions.x) + '%' }"
-      >{{popover.amount}}</div>
-    </template>
-
-    <template v-else>
-      <span
-        class="board"
-        :class="{dropzone: dragging}"
-        ref="board"
-        :style="{
-          'grid-template-columns': `repeat(${dimensions.x}, ${columnWidth}px)`, 
-          'grid-template-rows': `repeat(${dimensions.y}, ${columnWidth}px)`,
-        }"
-      >
-        <Piece
-          v-for="piece, index in enemy.pieces"
-          :key="piece.id"
-          :x="piece.x"
-          :y="piece.y"
-          :indicator="piece.indicator"
-          :type="piece.type"
-          :color="piece.color"
-          :id="piece.id"
-        />
-        <MovablePiece
-          v-for="piece, index in player.pieces"
-          :key="piece.id"
-          :x="piece.x"
-          :y="piece.y"
-          :indicator="piece.indicator"
-          :type="piece.type"
-          :color="piece.color"
-          :id="piece.id"
-        />
-      </span>
-    </template>
+      <Board />
 
     <Bench
-      ref="bench"
       :dimensions="dimensions"
       :player="player"
       :gameData="gameData"
+      @startPieceDrag="startPieceDrag"
+      @endDrag="placePiece"
+      :dragging="draggingPiece"
       :columnWidth="columnWidth"
     />
 
-    <Shop ref="shop" class="shopholder" :gameData="gameData" :player="player" @notify="notify" />
-    <DropWatcher
-      :elementsToWatch="[
-        {name: 'board', el: $refs.board}, 
-        {name: 'bench', el: $refs.bench}, 
-        {name: 'shop', el: $refs.shop}
-      ]"
-      @drop="handleDrop"
+    <Shop
+      ref="shop"
+      class="shopholder"
+      :dragging="draggingPiece"
+      :gameData="gameData"
+      :player="player"
+      @notify="notify"
     />
   </div>
 </template>
@@ -121,19 +86,9 @@ import Stats from '~/components/Stats'
 import firestore from '~/assets/firestore'
 import Shop from '~/components/Shop'
 import Bench from '~/components/Bench'
-import WinBanner from '~/components/WinBanner'
-import DropWatcher from '~/components/DropWatcher'
 
 export default {
-  components: {
-    Piece,
-    MovablePiece,
-    Stats,
-    Shop,
-    Bench,
-    WinBanner,
-    DropWatcher,
-  },
+  components: { Piece, MovablePiece, Stats, Shop, Bench },
   props: {
     dimensions: {
       type: Object,
@@ -160,13 +115,11 @@ export default {
       movingId: null,
       damageId: null,
       isScrubbing: false,
+      draggingPiece: false,
       levelRatio: 100,
     }
   },
   computed: {
-    dragging() {
-      return !!this.$store.state.draggingPiece
-    },
     currentGameState() {
       if (!this.gameData || !this.gameData.length) return
       return JSON.parse(this.gameData[this.playbackPosition].gameState)
@@ -237,9 +190,6 @@ export default {
     },
   },
   methods: {
-    setPlaybackPosition(newPosition) {
-      this.playbackPosition = newPosition
-    },
     advance() {
       if (!this.gameData || this.winner) return
       this.currentSpeed =
@@ -253,38 +203,47 @@ export default {
           : //gradually slow down
             this.autoSpeed +
             this.autoSpeed *
-              ((this.playbackPosition / this.gameData.length) * 0.5)
+              ((this.playbackPosition / this.gameData.length) * 0.8)
 
       setTimeout(this.advance, this.currentSpeed)
       if (this.playbackPosition < this.gameData.length - 1) {
         this.playbackPosition++
       }
     },
-
-    handleDrop({ droppedEl, piece, xPercent, yPercent }) {
-      if (!droppedEl || droppedEl.name === 'bench')
-        this.$emit('sendToBench', piece.id)
-      else if (droppedEl.name === 'board') {
-        const newX = Math.round(this.dimensions.x * xPercent - 0.5)
-        const newY = Math.round(this.dimensions.y * yPercent - 0.5)
-
-        if (piece.bench === false)
-          this.$emit('updatePiece', {
-            homeX: newX,
-            homeY: newY,
-            id: piece.id,
-          })
-        else
-          this.$emit('playFromBench', {
-            x: newX,
-            y: newY,
-            id: piece.id,
-          })
-      } else if (droppedEl.name === 'shop') {
-        this.$emit('sell', { id: piece.id, type: piece.type })
-      }
+    reverse() {
+      if (this.playbackPosition > 0) this.playbackPosition--
     },
-
+    startPieceDrag() {
+      this.draggingPiece = true
+    },
+    placePiece(newPosition) {
+      this.draggingPiece = false
+      const newX = Math.round(this.dimensions.x * newPosition.x - 0.5)
+      const newY = Math.round(this.dimensions.y * newPosition.y - 0.5)
+      // console.log(newX, newY)
+      if (
+        newX > this.dimensions.x - 1 ||
+        newX < 0 ||
+        newY > this.dimensions.y - 1 ||
+        newY < 0
+      ) {
+        // toBench!
+        this.$emit('sendToBench', newPosition.id)
+        return
+      }
+      if (newPosition.bench !== false)
+        this.$emit('playFromBench', {
+          x: newX,
+          y: newY,
+          id: newPosition.id,
+        })
+      else
+        this.$emit('updatePiece', {
+          homeX: newX,
+          homeY: newY,
+          id: newPosition.id,
+        })
+    },
     shouldShadeGridElement(index) {
       if (this.dimensions.x % 2 === 1) return index % 2 === 1
       //even number

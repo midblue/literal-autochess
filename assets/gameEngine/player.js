@@ -1,5 +1,10 @@
 import gameManager from './gameManager'
 import generatePieces from './generatePieces'
+import prices from '../pieceManagement/prices'
+
+function getPieceLimit(level) {
+  return Math.min(Math.ceil(level / 2) + 2, 16)
+}
 
 export default function({
   pieces = [{ type: 'king', color: 'black', x: 3, y: 7 }],
@@ -18,6 +23,7 @@ export default function({
     hp,
     gold,
     dimensions,
+    pieceLimit: getPieceLimit(1),
     previousWinnings: {},
     pieces: generatePieces(pieces),
     bench: generatePieces(bench),
@@ -47,11 +53,28 @@ export default function({
         this.bench = [...this.bench, piece]
       }
     },
-    removePiece(id) {
+    sellPiece(id, type) {
+      if (!this.pieces.find(p => p.id !== id && p.type === 'king'))
+        return {
+          error: true,
+          notify: true,
+          msg: `Must have at least one king in play!`,
+        }
+      const sellPrice = prices.sell[type] || 0
+      this.gold += sellPrice
       this.pieces = this.pieces.filter(p => p.id !== id)
       this.bench = this.bench.filter(p => p.id !== id)
+      return sellPrice
     },
     playFromBench({ id, x, y }) {
+      if (this.pieces.length >= this.pieceLimit)
+        return {
+          error: true,
+          msg: `Can't play more than ${this.pieceLimit} pieces at this level!`,
+          context: { limit: this.pieceLimit, pieces: this.pieces.length },
+          notify: true,
+        }
+
       const pieceToUpdate = this.bench.find(p => {
         return p.id === id
       })
@@ -123,6 +146,7 @@ export default function({
       this.toggleBench(pieceToUpdate)
       return true
     },
+
     updatePiece(updatedProps) {
       const pieceToUpdate = this.pieces.find(p => {
         return p.id === updatedProps.id
@@ -171,9 +195,11 @@ export default function({
       pieceToUpdate.y = pieceToUpdate.homeY
       return true
     },
+
     applyUpgrade(type) {
       if (type === 'hp') this.hp++
     },
+
     onGameReset() {
       this.pieces.forEach(p => {
         if (p.onGameReset) p.onGameReset()
@@ -184,6 +210,7 @@ export default function({
     },
     levelUp() {
       this.level++
+      this.pieceLimit = getPieceLimit(this.level)
     },
     takeDamage(amount) {
       if (!isHuman) return true
@@ -195,6 +222,7 @@ export default function({
       let interestGold = Math.min(5, Math.floor(this.gold / 10))
       this.gold += winGold + interestGold
       this.previousWinnings = { didWin, winGold, interestGold }
+      // todo working properly every time?
     },
     resetPreviousGold() {
       this.previousWinnings = { didWin: null, winGold: 0, interestGold: 0 }
